@@ -1,0 +1,77 @@
+# Routes
+# This file defines all application routes (Higher priority routes first)
+# ~~~~
+
+# Home page
+GET     /                           controllers.LoginController.loginform()
+
+# Map static resources from the /public folder to the /assets URL path
+GET     /assets/*file                       controllers.Assets.at(path="/public", file)
+
+GET     /login                                  controllers.LoginController.loginform()
+POST    /login                                  controllers.LoginController.login()
+GET     /home                                   controllers.Application.home()
+GET     /loguit                                 controllers.Application.loguit()
+
+GET     /leerling/spellingregelkiezen       controllers.LeerlingController.spellingregelKiezen()
+POST    /uitleg/uitlegBeluisteren           controllers.LeerlingController.beluisterUitleg()
+
+POST    /spellingregel/create               controllers.SpellingregelController.createSpellingregel()
+GET     /spellingregel/beheren              controllers.SpellingregelController.getBeheer()
+GET     /spellingregel/selecteren           controllers.SpellingregelController.selecteren()
+POST    /spellingregel/beheren              controllers.SpellingregelController.beheer()
+POST    /spellingregel/delete               controllers.SpellingregelController.deleteSpellingregel()
+
+POST    /spellingregel/korteuitlegaanpassen     controllers.SpellingregelController.korteUitlegOpslaan()
+POST    /spellingregel/opdrachtuitlegaanpassen  controllers.SpellingregelController.opdrachtUitlegOpslaan()
+
+POST    /spellingregelmodal/create              controllers.SpellingregelController.createSpellingregelModal()
+POST    /spellingregelmodal/delete              controllers.SpellingregelController.deleteSpellingregelModal()
+
+POST    /woord/create                           controllers.WoordController.createWoord()
+POST    /woord/update                           controllers.WoordController.updateWoord()
+POST    /woord/delete                           controllers.WoordController.deleteWoord()
+POST    /woordmodal/update                      controllers.WoordController.updateWoordModal()
+POST    /woordmodal/create                      controllers.WoordController.newWoordModal()
+POST    /woordmodal/delete                      controllers.WoordController.deleteWoordModal()
+
+POST    /uitleg/create                          controllers.UitlegController.createUitleg()
+POST    /uitleg/aanmaken                        controllers.UitlegController.createUitlegPage()
+POST    /uitleg/aanpassen                       controllers.UitlegController.uitlegAanpassen()
+POST    /uitleg/delete                          controllers.UitlegController.deleteUitleg()
+POST    /uitlegmodal/create                     controllers.UitlegController.newUitlegModal()
+POST    /uitlegmodal/delete                     controllers.UitlegController.deleteUitlegModal()
+
+POST    /voorbereindendoefenen                  controllers.OpdrachtPrikkeldraadController.voorbereindendOefenen()
+POST    /opdrachten/spellingRegel               controllers.OpdrachtSpellingController.opdrachtMaken()
+POST    /opdrachten/checkAntwoord               controllers.OpdrachtSpellingController.checkAntwoord(antwoord : String, antwoordVersie1 : String)
+POST    /toets/spellingRegel                    controllers.ToetsController.toetsMaken()
+POST    /toets/checkAntwoord                    controllers.ToetsController.checkAntwoord(correctAntwoord : String,antwoordDefinitief : String, antwoordVersie1 : String)
+
+POST    /categorie/create                       controllers.CategorieController.createCategorie()
+POST    /categorie/update                       controllers.CategorieController.updateCategorie()
+POST    /categorie/delete                       controllers.CategorieController.deleteCategorie()
+POST    /categoriemodal/create                  controllers.CategorieController.newCategorieModal()
+POST    /categoriemodal/update                  controllers.CategorieController.updateCategorieModal()
+POST    /categoriemodal/delete                  controllers.CategorieController.deleteCategorieModal()
+
+GET     /gebruiker                              controllers.AccountController.accountOverzicht()
+POST    /gebruiker/register                     controllers.AccountController.registerUser()
+POST    /gebruiker/delete                       controllers.AccountController.deleteUser()
+POST    /gebruiker/modal/registeradmin          controllers.AccountController.newAdminModal()
+POST    /gebruiker/modal/registerleraar         controllers.AccountController.newLeraarModal()
+POST    /gebruiker/modal/registerleerling       controllers.AccountController.newLeerlingModal()
+POST    /gebruiker/modal/persoonsgegevens       controllers.AccountController.updatePersoonsGegevensModal()
+POST    /gebruiker/modal/inloggegevens          controllers.AccountController.updateInlogGegevensModal()
+POST    /gebruiker/modal/delete                 controllers.AccountController.deleteUserModal()
+POST    /gebruiker/inloggegevens/update         controllers.AccountController.updateInlogGegevens()
+POST    /gebruiker/persoonsgegevens/update      controllers.AccountController.updatePersoonsgegevens()
+
+GET     /analyze/:uuid                          controllers.AnalyzeOverzichtController.analyzeOverzicht(uuid: String)
+
+POST    /analyze/deleteDatum/:id                controllers.AnalyzeOverzichtController.deletePerDatum(id: Int)
+POST    /analyze/deleteOpdracht/:id             controllers.AnalyzeOverzichtController.deletePerOpdracht(id: Int)
+POST    /analyze/deleteToets/:id                controllers.AnalyzeOverzichtController.deletePerToets(id: Int)
+
+GET     /javascriptRoutes                       controllers.Application.javascriptRoutes()
+

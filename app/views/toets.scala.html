@@ -1,0 +1,187 @@
+@import model.Woord
+@(woordLijst : List[Woord], hoezithet : String)
+<link href="@routes.Assets.at("stylesheets/simple-sidebar.css")" rel="stylesheet">
+
+    <!-- Modal -->
+<div class="modal fade" id="nadenkenModal" role="dialog">
+    <div class="modal-dialog">
+            <!-- Modal content-->
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                <h4 class="modal-title">Hoe zit het?</h4>
+            </div>
+            <div class="modal-body">
+                <pre>@hoezithet</pre>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Terug</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+    <div class="panel-header">
+        <table>
+            <tr style="width: 100%;">
+                <td class="tablecol" id="horen">
+                        <img src="@routes.Assets.at("images/icons/horen.png")"/>
+                    <div class="text-center text-hulp">
+                        Ik luister
+                    </div>
+                </td>
+
+                <td class="tablecol" id="nazeggen">
+                    <img src="@routes.Assets.at("images/icons/nazeggen.png")"/>
+                    <div class="text-center text-hulp">
+                        Ik zeg na
+                    </div>
+                </td>
+                <td class="tablecol" id="klankgroepzeggen">
+                    <img src="@routes.Assets.at("images/icons/klankgroepzeggen.png")"/>
+                    <div class="text-center text-hulp">
+                        Ik zeg na in klankgroepen
+                    </div>
+                </td>
+                <td class="tablecol" id="nadenken">
+                    <button type="button" class="btn" data-toggle="modal" data-target="#nadenkenModal">
+                        <img src="@routes.Assets.at("images/icons/Question_Mark.png")"/>
+                    </button>
+                    <div class="text-center text-hulp">
+                        Ik denk aan regels
+                    </div>
+                </td>
+                <td class="tablecol" id="intikken">
+                    <img src="@routes.Assets.at("images/icons/intikken.png")"/>
+                    <div class="text-center text-hulp">
+                        Ik typ
+                    </div>
+                </td>
+                <td class="tablecol" id="controleren">
+                    <img src="@routes.Assets.at("images/icons/controleren.png")"/>
+                    <div class="text-center text-hulp">
+                        Ik controleer
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="panel-body">
+        <table>
+            @for(woord <- woordLijst){
+                <tr>
+                    <td>
+                        <img src="@routes.Assets.at("images/icons/fout.png")" id="fout@woord.getWoord" style="width:25px;visibility: hidden;"/>
+                        <img src="@routes.Assets.at("images/icons/goed.png")" id="goed@woord.getWoord" style="width:25px;visibility: hidden;"/>
+                        <button type="button" class="btn" onclick="playSound('@routes.Assets.at(woord.getUitspraak())')">
+                            <img src="@routes.Assets.at("images/icons/horen.png")" style="width:25px;"/>
+                        </button>
+                        <input id="@woord.getWoord" type="text" value="" name="antwoord" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+                        <input type="button" id="button@woord.getWoord" onclick="zetEersteAntwoord('@woord.getWoord')" class="btn btn-primary" value="Controleren"/>
+                        <label id="correct@woord.getWoord" name="correctWoord" style="visibility: hidden;">@woord.getWoord</label>
+                        <label id="label@woord.getWoord" name="antwoordVersie1" style="visibility: hidden;"></label>
+                    </td>
+                </tr>
+            }
+        </table>
+        <div>
+            <label style="visibility: hidden;">justtext</label>
+            <input id="finishKnop" type="button" onclick="finishToets()" class="btn btn-primary" value="Toets inleveren"/>
+        </div>
+        <div>
+            <label style="visibility: hidden;">justtext</label>
+            <label id="eindText" style="visibility: hidden;"></label>
+        </div>
+    </div>
+
+<style>
+        img {
+            max-width: 100%;
+            max-height: 100%;
+        }
+        woordButtonAudio{
+            max-width: 25%;
+            max-height: 25%;
+        }
+</style>
+
+<script type="text/javascript">
+        var woordArray = [];
+
+        function zetEersteAntwoord(correctWoord){
+            var antwoord1versie = document.getElementById(correctWoord).value;
+            $('#label'+correctWoord).text(antwoord1versie);
+
+            var button = $('#button'+correctWoord);
+            button.css("visibility", "hidden");
+        }
+
+        function finishToets(){
+            var empty = false;
+            var aantalGoed = 0;
+            var aantalFout = 0;
+            $('input[type="text"]').each(function(){
+                if($(this).val()!=""){
+                    empty =true;
+                    return true;
+                } else{
+                    empty =false;
+                    return false;
+                }
+            });
+
+            if (empty){
+                $('[name=antwoord]').each(function () {
+                    var correctAntwoord = $(this).closest('td').find('[name=antwoord]').attr("id");
+                    var antwoord = $(this).closest('td').find('[name=antwoord]').val();
+                    var antwoordVersie1 = $(this).closest('td').find('[name=antwoordVersie1]').text();
+
+                    //Laat zien of het goed of fout is
+                    var imgGoed = $(this).closest('td').find('#goed'+correctAntwoord);
+                    var imgFout = $(this).closest('td').find('#fout'+correctAntwoord);
+                    var correctWoordLabel = $(this).closest('td').find('#correct'+correctAntwoord);
+                    if (correctAntwoord == antwoord){
+                        imgGoed.css("visibility", "visible");
+                        aantalGoed += 1;
+                    } else if (correctAntwoord != antwoord){
+                        imgFout.css("visibility", "visible");
+                        correctWoordLabel.css("visibility", "visible");
+                        aantalFout += 1;
+                    }
+
+                    //Maakt overgebleven knoppen ontzichtbaar
+                    var button = $('#button'+correctAntwoord);
+                    button.css("visibility", "hidden");
+
+                    //Eindtext zichtbaar maken en finishknop weghalen
+                    var finishKnop = $('#finishKnop');
+                    finishKnop.css("visibility", "hidden");
+                    var eindText = "Aantal goed: " + aantalGoed + ", Aantal fout: " + aantalFout;
+                    var eindTextLabel = $('#eindText').text(eindText);
+                    eindTextLabel.css("visibility", "visible");
+
+                    //Call naar ToetsController
+                    jsRoutes.controllers.ToetsController.checkAntwoord(correctAntwoord, antwoord, antwoordVersie1).ajax({
+                        dataType: "json",
+                        success : function(data) {
+                            if (data.error){
+                                alert("Er is iets misgegaan, selecteer de opdracht opnieuw.");
+                            } else{
+
+                            }
+                        },
+                    });
+                })
+            }
+            else if(!empty){
+                alert("Vul alle woorden in!");
+            }
+        }
+
+        function playSound(sound){
+            var audio = new Audio(sound);
+            audio.play();
+        }
+</script>

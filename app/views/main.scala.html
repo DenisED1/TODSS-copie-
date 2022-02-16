@@ -1,0 +1,219 @@
+@(title: String)(content: Html)
+<!DOCTYPE html>
+
+<html>
+    <head>
+        <title>@title</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+        <script src="@routes.Assets.at("javascripts/jquery-3.3.1.min.js")"></script>
+        <script src = "@routes.Assets.at("javascripts/jquery-ui-1.12.1.min.js")"></script>
+        <script src="@routes.Assets.at("javascripts/bootstrap.min.js")"></script>
+
+        <!-- Bootstrap Core CSS -->
+        <link href="@routes.Assets.at("stylesheets/bootstrap.css")" rel="stylesheet">
+        <link href="@routes.Assets.at("stylesheets/main.css")" rel="stylesheet">
+
+        <link href = "@routes.Assets.at("stylesheets/jquery-ui.theme.min-1.12.1.css")" rel = "stylesheet">
+        <link href = "@routes.Assets.at("stylesheets/jquery-ui.structure.min-1.12.1.css")" rel = "stylesheet">
+        <link href = "@routes.Assets.at("stylesheets/jquery-ui.min-1.12.1.css")" rel = "stylesheet">
+        <!--  Load site-specific customizations after bootstrap. -->
+        <link rel="shortcut icon" type="image/png" href="@routes.Assets.at("images/favicon.png")">
+
+        <script type="text/javascript" src='@routes.Application.javascriptRoutes()'></script>
+    </head>
+    <body id="body">
+        <!-- Responsive navbar -->
+        <div class="navbar navbar-default navbar-fixed-top" role="navigation" id="mainnav">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                        <!--  Display three horizontal lines when navbar collapsed. -->
+                    <span class="icon-bar"></span> <span class="icon-bar"></span> <span class="icon-bar"></span>
+                </button>
+                @if(session.get("functie") != null && session.get("functie").equals("leerling") && session.get("spellingRegel") != null) {
+                    <a href="#mySidenav" style="color: #7f0076;
+                        font-size: 30px;
+                        float: left;
+                        margin-left: 16px; " onclick="openNav()" ;>&#9776;</a>
+                }
+                <a class="navbar-brand" href="@routes.Application.home()" style="margin-left: 10px">De Engh</a>
+            </div>
+            <div class="navbar-collapse collapse" id="navbar-main">
+                <ul class="nav navbar-nav">
+                    @if(session.get("functie") != null) {
+                        <li class="@("active".when(title == "Home"))">
+                            <a href="@routes.Application.home()">Home</a>
+                        </li>
+
+                        @if(session.get("functie").equals("administrator")) {
+                            <li class="@("active".when(title == "SpellingRegel selecteren" || title == "SpellingRegel beheren"))">
+                                <a href="@routes.SpellingregelController.selecteren()">SpellingRegel beheren</a>
+                            </li>
+                            <li class="@("active".when(title == "Accountoverzicht"))">
+                                <a href="@routes.AccountController.accountOverzicht()">Accountoverzicht</a>
+                            </li>
+                        } else {
+                            @if(session.get("functie").equals("leerling")) {
+                                <li class="@("active".when(title == "SpellingRegel kiezen"))">
+                                    <a href="@routes.LeerlingController.spellingregelKiezen()">SpellingRegel kiezen</a>
+                                </li>
+                            } else {
+                                @if(session.get("functie").equals("leraar")){
+                                    <li class="@("active".when(title == "Leerlingoverzicht"))">
+                                        <a href="@routes.AccountController.accountOverzicht()">Mijn leerlingen</a>
+                                    </li>
+                                }
+                            }
+                        }
+                        <li >
+                            <a href="@routes.Application.loguit()">Uitloggen</a>
+                        </li>
+                    } else {
+                        <li class="@("active".when(title == "Login"))">
+                            <a href="@routes.LoginController.loginform()">Inloggen</a>
+                        </li>
+                    }
+                </ul>
+            </div>
+        </div>
+
+        <style>
+            #message {
+                margin-top: 80px;
+		width: 100%;
+                position: fixed;
+                top: 0;
+                left: 0;
+                z-index: 40;
+            }
+            #message > div {
+                margin: 0 auto;
+                width: auto;
+                float: right;
+            }
+            body{
+                transition: background-color .5s;
+            }
+        </style>
+
+        <div id="message" style="padding: 5px;">
+            <div id="success-message" class="alert alert-success fade in alert-dismissable"></div>
+            <div id="fault-message" class="alert alert-danger fade in alert-dismissable"></div>
+        </div>
+
+        <script>
+            $("#success-message").hide();
+            $("#fault-message").hide();
+        </script>
+
+        <script>
+            var successmessage = "@flash().get("success-message")";
+            if (successmessage.length > 0) {
+                $("#success-message").text();
+                $("#success-message").append('<a href="#" class="close" data-dismiss="alert" aria-label="close" title="close">×</a>' + successmessage);
+                $("#success-message").show();
+            }
+            var faultmessage = "@flash().get("error-message")";
+            if (faultmessage.length > 0) {
+                $("#fault-message").text();
+                $("#fault-message").append('<a href="#" class="close" data-dismiss="alert" aria-label="close" title="close">×</a>' + faultmessage);
+                $("#fault-message").show();
+            }
+        </script>
+
+        <nav id="mySidenav" class="sidenav navbar navbar-default navbar-left">
+            <div style="border-bottom: 1px solid #111;">
+                <a class="navbar-brand" href="#" style="float: none; padding-bottom: 0px; font-size: 18px;">SpellingRegel:</a>
+                <a style="padding-top: 5px;" class="spellingregelnaam">@session.get("spellingRegel")</a>
+            </div>
+            <div>
+                <ul>
+                    <li>
+                        <form action="@routes.LeerlingController.beluisterUitleg()" method="POST" enctype="multipart/form-data" >
+                            <input type="hidden" name="spellingregelnaam" value="@session.get("spellingRegel")"/>
+                            <a href="#" id="submitbtn" onclick="$(this).closest('form').submit()">Uitleg beluisteren</a>
+                        </form>
+                    </li>
+                    <li>
+                        <form action="@routes.OpdrachtPrikkeldraadController.voorbereindendOefenen()" method="POST" enctype="multipart/form-data" >
+                            <input type="hidden" name="spellingRegel" value="@session.get("spellingRegel")"/>
+                            <a href="#" id="submitbtn" onclick="$(this).closest('form').submit()">Voorbereidend oefenen</a>
+                        </form>
+                    </li>
+                    <li>
+                        <a href="#collapse" data-toggle="collapse" onclick="changeSubmenu(this)">Opdracht maken</a>
+                    </li>
+                    <div id="collapse"  class="collapse">
+                        <ul id="submenu">
+                            <li>
+                                <form action="@routes.OpdrachtSpellingController.opdrachtMaken()" method="POST" enctype="multipart/form-data" id="opdrachtform" >
+                                    <input type="hidden" name="spellingregelnaam" value="@session.get("spellingRegel")"/>
+                                    <input type="hidden" name="moeilijkheidsgraad" value="Makkelijk"/>
+                                    <a href="#" id="submitbtn" onclick="$(this).closest('form').submit()">Makkelijk</a>
+                                </form>
+                            </li>
+                            <li>
+                                <form action="@routes.OpdrachtSpellingController.opdrachtMaken()" method="POST" enctype="multipart/form-data" id="opdrachtform" >
+                                    <input type="hidden" name="spellingregelnaam" value="@session.get("spellingRegel")"/>
+                                    <input type="hidden" name="moeilijkheidsgraad" value="Moeilijk"/>
+                                    <a href="#" id="submitbtn" onclick="$(this).closest('form').submit()">Moeilijk</a>
+                                </form>
+                            </li>
+                        </ul>
+                    </div>
+                    <li>
+                        <a href="@routes.LeerlingController.spellingregelKiezen()">Toets</a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+
+        <div id="main">
+            <div id="darkLayer" class="darkClass" style="display: none;"></div>
+            @content
+        </div>
+
+        <script>
+            var opened = false;
+
+            function openNav() {
+                if(!opened) {
+                    document.getElementById("darkLayer").style.display = "";
+                    $("#darkLayer").fadeTo(500, 0.5);
+                    document.getElementById("mySidenav").style.left = "0";
+                    document.getElementById("main").style.marginLeft = "250px";
+                    document.getElementById("mainnav").style.marginLeft = "250px";
+                }
+                else{
+                    closeNav();
+                }
+                opened = !opened;
+            }
+
+            function closeNav() {
+                document.getElementById("mySidenav").style.left = "-250px";
+                document.getElementById("main").style.marginLeft= "0";
+                document.getElementById("mainnav").style.marginLeft= "0";
+                $("#darkLayer").fadeTo(500, 0, function(){
+                    document.getElementById("darkLayer").style.display = "none";
+                });
+
+            }
+
+            var submenuopen = false;
+            function changeSubmenu(element){
+                if(!submenuopen) element.className += " sidenavlihovered";
+                else element.className -= " sidenavlihovered";
+                submenuopen = !submenuopen;
+            }
+
+            $( document ).ready(function() {
+                $("#darkLayer").click(function(e){
+                    if(opened){
+                        openNav();
+                    }
+                });
+            });
+        </script>
+    </body>
+</html>

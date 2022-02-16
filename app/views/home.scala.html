@@ -1,0 +1,19 @@
+@()
+<link rel="stylesheet" media="screen" href="@routes.Assets.at("stylesheets/login.css")">
+
+    <h2 id="space">@session.get("functie")</h2>
+    <div id="bold">Naam:</div>
+    <div id="space">@session.get("voornaam") @session.get("achternaam")</div>
+    <div id="bold">Klas:</div>
+    <div id="space">@session.get("klas")</div>
+    <div id="bold">Geboortedatum:</div>
+    <div id="space">@session.get("geboortedatum")</div>
+
+<style>
+    #space{
+        padding-bottom: 50px;
+    }
+    #bold {
+        font-weight: bold;
+    }
+</style>

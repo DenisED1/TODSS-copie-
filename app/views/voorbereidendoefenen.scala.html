@@ -1,0 +1,394 @@
+@import model.{Categorie, Woord}
+@(woorden : List[Woord], categorieen : List[Categorie])
+<link href="@routes.Assets.at("stylesheets/simple-sidebar.css")" rel="stylesheet">
+<div id="wrapper">
+    
+        <div id="page-content-wrapper">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h2>Kies in welke categorie het woord hoort.</h2>
+                </div>
+                <div class="panel-body">
+                    <div class="progress">
+                        <div class="progress-bar" role="progressbar" id="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="@woorden.size()">
+                            0/@woorden.size()
+                        </div>
+                    </div>
+                    <div style="display: inline-block; width:10%; float:left;">
+                        <button class="btn" onclick="$(this).find('#sound').get(0).play()" id="playbtn">
+                            <audio id="sound" src=""></audio>
+                            <image src="@routes.Assets.at("images/icons/horen.png")" href="#" onclick="return false;" style="width: 100%;"/>
+                        </button>
+                    </div>
+                    <div style="width: 85%;margin-left: 5%; display: inline-block; float: right;">
+                        <div id="exampleContainer" style="max-width: 750px; min-width: 500px; height: 500px; background-color: #fff; "></div>
+                        <div>
+                            <table class="table">
+                            @for(categorie <- categorieen){
+                                <table id="@categorie.getNaam" style="display: inline-table; width: 90px; margin: 0; margin-left: 30px;" class="table">
+                                    <tr>
+                                        <th>@categorie.getNaam</th>
+                                    </tr>
+                                </table>
+                            }
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    
+</div>
+<style>
+    .vertical thead,.vertical tbody{
+        display:inline-block;
+    }
+</style>
+<script src="@routes.Assets.at("javascripts/playground.js")"></script>
+<script>
+var balloons = [];
+var manden = [];
+var woorden = [];
+var needles = [];
+var currentWoord;
+var clicked = false;
+var coor = 0;
+var aantalBallonnen = 0;
+var aantalManden = 0;
+var mandimg;
+var done = false;
+var progress = 0;
+
+function Woord(woord, uitspraak, categorie){
+    this.woord = woord;
+    this.uitspraak = uitspraak;
+    this.categorie = categorie;
+    this.goed = true;
+}
+
+function Balloon(image){
+    this.x = aantalBallonnen++ * 200 + 50;
+    this.startx = this.x;
+    this.y = app.center.y * 2;
+    this.image = image;
+    this.speed = 70;
+    this.clicked = false;
+    this.fall = 1;
+    this.telaat = false;
+    this.reset = function(){
+        this.x = this.startx;
+        this.y = app.center.y * 2;
+        this.speed = 70;
+        this.clicked = false;
+        this.telaat = false;
+        this.fall = 1;
+    }
+}
+
+function Mand(category){
+    this.x = aantalManden++ * 200 + 50;
+    this.image = mandimg;
+    var filter = 'hue-rotate(120deg) saturate(2.4)';
+    this.image.style['-webkit-filter'] = filter;
+    this.image.style['filter'] = filter;
+    this.category = category;
+    this.color = "#e2543e";
+    this.imgdata = undefined;
+}
+
+function Prikkel(image, x){
+    this.image = image;
+    this.x = x;
+    this.y = -image.height/4;
+}
+
+app = new PLAYGROUND.Application({
+    scale : 0.6,
+    create: function () {
+        this.loadImages("../assets/images/voorbereindendoefenen/balklein.png", "../assets/images/voorbereindendoefenen/prikkeldraadklein.png", "../assets/images/voorbereindendoefenen/mand.png");        // this.loadImages("rob.jpg");
+    },
+    ready: function () {
+        mandimg = this.images["../assets/images/voorbereindendoefenen/mand"];
+        var balimg = this.images["../assets/images/voorbereindendoefenen/balklein"];
+        var neeldeimg = this.images["../assets/images/voorbereindendoefenen/prikkeldraadklein"];
+        manden = [];
+        balloons = [];
+        needles = [];
+        @for(categorie <- categorieen){
+            manden.push(new Mand('@categorie.getNaam'));
+            var balloon = new Balloon(balimg);
+            balloons.push(balloon);
+            needles.push(new Prikkel(neeldeimg, balloon.x - balloon.image.width/2));
+        }
+        this.mand = manden[0];
+        @for(woord <- woorden){
+            woorden.push(new Woord("@woord.getWoord", "@routes.Assets.at(woord.getUitspraak)", "@woord.getCategorie.getNaam"));
+        }
+        setCurrentWoord(woorden.shift());
+        setProgress(progress++);
+    },
+
+    step: function (dt) {
+        for (var i = 0; i < balloons.length; i++) {
+            if (!balloons[i].clicked) {
+                balloons[i].y -= balloons[i].speed * dt;
+            }
+            else {
+                if (balloons[i].y < this.center.y * 2 - this.mand.image.height) {
+                    balloons[i].y += balloons[i].speed * dt * balloons[i].fall;
+                    balloons[i].fall += dt * 2;
+                }
+                else {
+                    if (currentWoord.goed != manden[i].category) {
+                        if (balloons[i].x > coor) {
+                            balloons[i].x -= (balloons[i].speed * dt) * 2;
+                        }
+                        else if (balloons[i].x < coor) {
+                            balloons[i].x += (balloons[i].speed * dt) * 2;
+                        }
+                    }
+                    else {
+                        balloons[i].y += balloons[i].speed * dt;
+                    }
+                }
+            }
+            balloonOnPrikkel();
+        }
+
+    },
+
+    render: function (dt) {
+        this.layer.clear("#ffffff");
+        for (var i = 0; i < balloons.length; i++) {
+            if (!balloons[i].clicked && !clicked) {
+                this.layer.drawImage(balloons[i].image, balloons[i].x, balloons[i].y);
+            }
+            else if (balloons[i].clicked) {
+                if (balloons[i].y >= this.center.y * 2 - this.mand.image.height) {
+                    for (var q = 0; q < manden.length; q++) {
+                        if (currentWoord.categorie == manden[q].category && Math.abs(manden[q].x - balloons[i].x) < 2) {
+                            this.layer.fillStyle("#0dba00");
+                            this.layer.font("24px Comic Sans MS");
+                            this.layer.textAlign("center");
+                            this.layer.fillText(currentWoord.woord, balloons[i].x + 75, balloons[i].y);
+                            currentWoord.goed = manden[i].category;
+                            coor = manden[i].x;
+                            if(balloons[i].y > this.center.y * 2 + 10 && !done) {
+                                $("#"+currentWoord.categorie).append("<tr><td>"+currentWoord.woord+"</td></tr>");
+                                restart();
+                            }
+                            break;
+                        }
+                        else {
+                            if (currentWoord.categorie == manden[q].category) {
+                                coor = manden[q].x;
+                            }
+                            this.layer.fillStyle("#ba0000");
+                            this.layer.font("24px Comic Sans MS");
+                            this.layer.textAlign("center");
+                            this.layer.fillText(currentWoord.woord, balloons[i].x + 75, balloons[i].y);
+                            currentWoord.goed = false;
+                        }
+                    }
+                }
+                else {
+                    if(balloons[i].telaat) this.layer.fillStyle("#ba0000");
+                    else this.layer.fillStyle("#000000");
+                    this.layer.font("24px Comic Sans MS");
+                    this.layer.textAlign("center");
+                    this.layer.fillText(currentWoord.woord, balloons[i].x + 75, balloons[i].y);
+                }
+            }
+        }
+        for (var i = 0; i < manden.length; i++) {
+            var mand = manden[i];
+            var mandy = this.center.y * 2 - mand.image.height + mand.image.height/10;
+            /*if(mand.imgdata) {
+             //this.layer.drawImage(mand.image, mand.x, mandy);
+             this.layer.putImageData(mand.imgdata, mand.x, mandy);
+             }
+             else {
+             //console.log('recolor');
+             this.layer.drawImage(mand.image, mand.x, mandy);
+             recolorMand(-.33, mand.x, this.center.y * 2 - mand.image.height + mand.image.height / 10, mand.image.width, mand.image.height);
+             //this.layer.putImageData(this.layer.getImageData(mand.x, mandy, mand.image.width, mand.image.height), mand.x, mandy);
+             }*/
+            this.layer.drawImage(mand.image, mand.x, mandy);
+            this.layer.fillStyle("#000000");
+            this.layer.font("24px Comic Sans MS");
+            this.layer.textAlign("center");
+            this.layer.fillText(mand.category, mand.x + 75, this.center.y * 2 - mand.image.height + mand.image.height/2 + mand.image.height/10);
+        }
+
+        for(var i = 0; i< needles.length; i++){
+            var needle = needles[i];
+            this.layer.drawImage(needle.image, needle.x, needle.y);
+        }
+    },
+
+    mouseup: function (data) {
+        mousex = data.x;
+        mousey = data.y;
+        for (var i = 0; i < balloons.length; i++) {
+            if (mouseOnImage(balloons[i], mousex, mousey)) {
+                balloons[i].clicked = true;
+                clicked = true;
+            }
+        }
+    },
+    touchend: function (data) {
+        mousex = data.x;
+        mousey = data.y;
+        for (var i = 0; i < balloons.length; i++) {
+            if (mouseOnImage(balloons[i], mousex, mousey)) {
+                balloons[i].clicked = true;
+                clicked = true;
+            }
+        }
+    },
+
+    container: "#exampleContainer"
+
+});
+
+function balloonOnPrikkel(){
+    var goedemand = undefined;
+    for(var i = 0; i < manden.length; i++){
+        if(manden[i].category == currentWoord.categorie){
+            goedemand = manden[i];
+            break;
+        }
+    }
+    for(var i = 0; i < balloons.length; i++){
+        if(balloons[i].y <= needles[0].y + needles[0].image.height/2 && !clicked && Math.abs(balloons[i].x - goedemand.x) < 2) {
+            balloons[i].goed = false;
+            balloons[i].telaat = true;
+            balloons[i].clicked = true;
+            clicked = true;
+            break;
+        }
+    }
+}
+
+function mouseOnImage(balloon, mouseX, mouseY) {
+    return mouseX >= balloon.x && mouseX <= balloon.x + balloon.image.width
+            && mouseY >= balloon.y && mouseY <= balloon.y + balloon.image.height && !clicked;
+}
+
+function setCurrentWoord(woord){
+    currentWoord = woord;
+    $("#playbtn").find('#sound').attr('src', woord.uitspraak);
+    $("#playbtn").click();
+}
+
+function restart(){
+    coor = 0;
+    setProgress(progress++);
+    if(woorden.length > 0) {
+        setCurrentWoord(woorden.shift());
+        clicked = false;
+        for (var i = 0; i < balloons.length; i++) {
+            balloons[i].reset();
+        }
+    } else {
+        done = true;
+        $("#success-message").append("Je bent klaar met de opdracht. Klik " + '<a href="@routes.LeerlingController.spellingregelKiezen()">' +  "hier" + "</a>" + " om naar spellingRegel kiezen te gaan.");
+        $("#success-message").show();
+    }
+}
+
+function setProgress(progress){
+    $("#progressbar").css('width', (progress/@woorden.size()) * 100 + '%');
+    $("#progressbar").text(progress + '/@woorden.size()');
+}
+
+function recolorMand(colorshift, x, y, width, height) {
+    var imgData = app.layer.getImageData(x, y, width, height);
+    var data = imgData.data;
+    for (var i = 0; i < data.length; i += 4) {
+        red = data[i + 0];
+        green = data[i + 1];
+        blue = data[i + 2];
+        alpha = data[i + 3];
+        // skip transparent/semiTransparent pixels
+        if (alpha < 200) {
+            continue;
+        }
+
+        var hsl = rgbToHsl(red, green, blue);
+        var hue = hsl.h * 360;
+        // change blueish pixels to the new color
+        if (hue > 350 && hue < 360) { //(hue > 35 && hue < 45) voor manden, 350 - 360
+            var newRgb = hslToRgb(hsl.h + colorshift, hsl.s, hsl.l);
+            data[i + 0] = newRgb.r;
+            data[i + 1] = newRgb.g;
+            data[i + 2] = newRgb.b;
+            data[i + 3] = alpha;
+        }
+    }
+    app.layer.putImageData(imgData, x, y);
+    return imgData;
+}
+
+function rgbToHsl(r, g, b) {
+    r /= 255, g /= 255, b /= 255;
+    var max = Math.max(r, g, b),
+            min = Math.min(r, g, b);
+    var h, s, l = (max + min) / 2;
+
+    if (max == min) {
+        h = s = 0; // achromatic
+    } else {
+        var d = max - min;
+        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        switch (max) {
+            case r:
+                h = (g - b) / d + (g < b ? 6 : 0);
+                break;
+            case g:
+                h = (b - r) / d + 2;
+                break;
+            case b:
+                h = (r - g) / d + 4;
+                break;
+        }
+        h /= 6;
+    }
+
+    return ({
+        h: h,
+        s: s,
+        l: l,
+    });
+}
+
+
+function hslToRgb(h, s, l) {
+    var r, g, b;
+
+    if (s == 0) {
+        r = g = b = l; // achromatic
+    } else {
+        function hue2rgb(p, q, t) {
+            if (t < 0) t += 1;
+            if (t > 1) t -= 1;
+            if (t < 1 / 6) return p + (q - p) * 6 * t;
+            if (t < 1 / 2) return q;
+            if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+            return p;
+        }
+
+        var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+        var p = 2 * l - q;
+        r = hue2rgb(p, q, h + 1 / 3);
+        g = hue2rgb(p, q, h);
+        b = hue2rgb(p, q, h - 1 / 3);
+    }
+
+    return ({
+        r: Math.round(r * 255),
+        g: Math.round(g * 255),
+        b: Math.round(b * 255),
+    });
+}
+</script>

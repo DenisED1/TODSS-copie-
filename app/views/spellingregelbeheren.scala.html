@@ -1,0 +1,297 @@
+@import model.SpellingRegel
+
+@(title: String, spellingRegel : SpellingRegel, modal : Html)
+
+@modal
+
+<div class="jumbotron text-center">
+    <h1>SpellingRegel:</h1><span><h2>@spellingRegel.getNaam</h2></span>
+</div>
+<script>
+    function showModal(self, event, urlpart){
+        var tablerow =  $(self).closest("tr");
+        var params = {
+            "spellingregelnaam" : "@spellingRegel.getNaam",
+            "spellingregelid" : @spellingRegel.getId
+        };
+        $(tablerow).find('td').each(function (i, elem) {
+            var tdid = $(elem).attr('id');
+            if(tdid != null){
+                if(tdid == 'uitspraak')
+                    params[tdid] = $(elem).find("audio").attr('src');
+                else
+                    params[tdid] = $(elem).text();
+            }
+        });
+        $.ajax({
+            type: "POST",
+            url: urlpart + event.target.id,
+            data: params,
+            success: function (data){
+                $("#modal-content").text("");
+                $("#modal-content").append(data);
+                $('#myDynamicModal').modal('show');
+            }
+        });
+    }
+
+    $(document).ready(function() {
+        $("#korteUitlegInput").prop('disabled', true);
+        $("#korteUitlegOpslaan").hide();
+        $("#opdrachtUitlegInput").prop('disabled', true);
+        $("#opdrachtUitlegOpslaan").hide();
+
+        var kortAanpassen = false;
+        var uitlegText = "";
+        var opdrachtAanpassen = false;
+        var opdrachtUitlegText = "";
+
+        $(".btn[data-target='#categorieModal']").click(function (event) {
+            showModal(this, event, "/categoriemodal/");
+        });
+
+        $("#korteUitlegAanpassen").click(function(event){
+            korteUitlegAanpassen();
+        });
+
+        function korteUitlegAanpassen(){
+            console.log()
+            if(!kortAanpassen) {
+                $("#korteUitlegInput").prop('disabled', false);
+                $("#korteUitlegOpslaan").show();
+                $("#korteUitlegAanpassen").text('Annuleren');
+            } else {
+                $("#korteUitlegInput").val(uitlegText);
+                $("#korteUitlegInput").prop('disabled', true);
+                $("#korteUitlegOpslaan").hide();
+                $("#korteUitlegAanpassen").text('Aanpassen');
+            }
+
+            kortAanpassen = !kortAanpassen;
+        }
+
+        $("#korteUitlegOpslaan").click(function(){
+            var fdata = new FormData();
+            fdata.append("spellingRegel", "@spellingRegel.getNaam");
+            fdata.append("korteuitleg", $("#korteUitlegInput").val());
+
+            $.ajax({
+                url: "@routes.SpellingregelController.korteUitlegOpslaan()",
+                method: "POST",
+                data: fdata,
+                cache: false,
+                contentType: false,
+                processData: false,
+                success: function (data) {
+                    var $succesMsg = $("#success-message");
+                    $succesMsg.text("");
+                    $succesMsg.append('<a href="#" class="close" data-dismiss="alert" aria-label="close" title="close">×</a>' + data);
+                    $succesMsg.show();
+
+                    uitlegText = $("#korteUitlegInput").val();
+
+                    $("#korteUitlegAanpassen").click();
+                }
+            });
+        });
+
+        $("#opdrachtUitlegAanpassen").click(function(){
+            opdrachtUitlegAanpassen();
+        });
+
+        function opdrachtUitlegAanpassen(){
+            if(!opdrachtAanpassen) {
+                opdrachtUitlegText = $("#opdrachtUitlegInput").val();
+                $("#opdrachtUitlegInput").prop('disabled', false);
+                $("#opdrachtUitlegOpslaan").show();
+                $("#opdrachtUitlegAanpassen").text('Annuleren');
+            } else {
+                $("#opdrachtUitlegInput").val(opdrachtUitlegText);
+                $("#opdrachtUitlegInput").prop('disabled', true);
+                $("#opdrachtUitlegOpslaan").hide();
+                $("#opdrachtUitlegAanpassen").text('Aanpassen');
+            }
+            opdrachtAanpassen = !opdrachtAanpassen;
+        }
+
+        $("#opdrachtUitlegOpslaan").click(function(event){
+            var fdata = new FormData();
+            fdata.append("spellingRegel", "@spellingRegel.getNaam" );
+            fdata.append("opdrachtuitleg", $("#opdrachtUitlegInput").val());
+            $.ajax({
+                url: "@routes.SpellingregelController.opdrachtUitlegOpslaan()",
+                method: "POST",
+                data: fdata,
+                cache: false,
+                contentType: false,
+                processData: false,
+                success: function (data) {
+                    var $succesMsg = $("#success-message");
+                    $succesMsg.text("");
+                    $succesMsg.append('<a href="#" class="close" data-dismiss="alert" aria-label="close" title="close">×</a>' + data);
+                    $succesMsg.show();
+
+                    opdrachtUitlegText = $("#opdrachtUitlegInput").val();
+
+                    opdrachtUitlegAanpassen();
+                }
+            });
+        });
+
+    });
+</script>
+<div class="container">
+    <div style="display: inline-block">
+        <h2>Korte uitleg</h2>
+        <textarea rows="4" cols="60" maxlength="250" id="korteUitlegInput" style="resize: none;">@spellingRegel.getKorteUitleg</textarea>
+        <br>
+        <a class="btn btn-primary" style="margin-top: 5px;" id="korteUitlegAanpassen">Aanpassen</a>
+        <a class="btn btn-primary" style="margin-top: 5px;" id="korteUitlegOpslaan">Opslaan</a>
+    </div>
+    <div style="display: inline-block">
+        <h2>Opdracht uitleg</h2>
+        <textarea rows="4" cols="60" maxlength="250" id="opdrachtUitlegInput" style="resize: none;">@spellingRegel.getOpdrachtUitleg</textarea>
+        <br>
+        <a class="btn btn-primary" style="margin-top: 5px;" id="opdrachtUitlegAanpassen">Aanpassen</a>
+        <a class="btn btn-primary" style="margin-top: 5px;" id="opdrachtUitlegOpslaan">Opslaan</a>
+    </div>
+    <h2>Categorie</h2>
+    <table class="table table-bordered table-striped">
+        <thead>
+            <tr>
+                <th class="text">Naam</th>
+                <th class=""></th>
+                <th class="">Verwijderen</th>
+            </tr>
+        </thead>
+        <tbody>
+            @for(categorie <- spellingRegel.getCategorieen){
+                <tr>
+                    <td id="naam">@categorie.getNaam</td>
+                    <td><button class="btn btn-primary" data-toggle="modal" data-target="#categorieModal" id="update" contenteditable="false">Aanpassen</button></td>
+                    <td>
+                        <button class="btn btn-danger" data-toggle="modal" data-target="#categorieModal" id="delete" contenteditable="false" style="padding: 2px;">
+                            <img id="delete" src="@routes.Assets.at("images/delete.gif")" style="width:25px;"/>
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+        <tfoot>
+            <tr>
+                <td>
+                    <button class="btn btn-primary" data-toggle="modal" data-target="#categorieModal" id="create" contenteditable="false">Voeg toe</button>
+                </td>
+            </tr>
+        </tfoot>
+    </table>
+</div>
+
+<div class='container'>
+    <hr>
+</div>
+
+<script>
+    $(document).ready(function() {
+        $(".btn[data-target='#woordModal']").click(function (event) {
+            showModal(this, event, "/woordmodal/");
+        });
+    });
+</script>
+
+<div class="container">
+    <h2>Woorden</h2>
+    <table class="table table-bordered table-striped">
+        <thead>
+            <tr>
+                <th>Woord</th>
+                <th>Moeilijkheidsgraad</th>
+                <th>Categorie</th>
+                <th>Uitspraak</th>
+                <th></th>
+                <th>Verwijderen</th>
+            </tr>
+        </thead>
+        <tbody>
+            @for((woord, index) <- spellingRegel.getWoorden.zipWithIndex){
+                <tr id=@index>
+                    <td id="woord">@woord.getWoord</td>
+                    <td id="moeilijkheidsgraad">@woord.getMoeilijkheidsgraad.getText</td>
+                    <td id="categorie">@woord.getCategorie.getNaam</td>
+                    <td id="uitspraak"><audio src="@routes.Assets.at(woord.getUitspraak)" controls></audio></td>
+                    <td><button class="btn btn-primary" data-toggle="modal" data-target="#woordModal" id="update" contenteditable="false">Aanpassen</button></td>
+                    <td>
+                        <button class="btn btn-danger" data-toggle="modal" data-target="#woordModal" id="delete" contenteditable="false" style="padding: 2px;">
+                            <img id="delete" src="@routes.Assets.at("images/delete.gif")" style="width:25px;"/>
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+        <tfoot>
+            <tr>
+                <td>
+                    <button class="btn btn-primary" data-toggle="modal" data-target="#woordModal" id="create" contenteditable="false">Voeg toe</button>
+                </td>
+            </tr>
+        </tfoot>
+    </table>
+
+</div>
+
+<div class='container'>
+    <hr>
+</div>
+
+<script>
+    $(document).ready(function() {
+        $(".btn[data-target='#uitlegModal']").click(function (event) {
+            showModal(this, event, "/uitlegmodal/");
+        });
+    });
+</script>
+
+<div class="container">
+    <h2>Uitleg</h2>
+    <table class="table table-bordered table-striped">
+        <thead>
+            <tr>
+                <th class="number">Volgorde</th>
+                <th class="text">Titel</th>
+                <th>Aanpassen</th>
+                <th>Verwijderen</th>
+            </tr>
+        </thead>
+        <tbody>
+            @for(uitleg <- spellingRegel.getUitleg){
+                <tr>
+                    <td id="volgorde">@uitleg.getVolgorde</td>
+                    <td id="titel">@uitleg.getTitle</td>
+                    <td id="uuid" class="hidden">@uitleg.getUuid</td>
+                    <td>
+                        <form action="@routes.UitlegController.uitlegAanpassen" method="POST">
+                            <input type="hidden" name="spellingregelnaam" value="@spellingRegel.getNaam"/>
+                            <input type="hidden" name="uuid" value="@uitleg.getUuid"/>
+                            <input type="submit" class="btn btn-primary" value="Aanpassen"/>
+                        </form>
+                    </td>
+                    <td>
+                        <button class="btn btn-danger" data-toggle="modal" data-target="#uitlegModal" id="delete" contenteditable="false" style="padding: 2px;">
+                            <img id="delete" src="@routes.Assets.at("images/delete.gif")" style="width:25px;"/>
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+        <tfoot>
+            <tr>
+                <td>
+                    <form action="@routes.UitlegController.createUitlegPage" method="POST">
+                        <input type="hidden" name="spellingregelnaam" value="@spellingRegel.getNaam"/>
+                        <input type="submit" class="btn btn-primary" value="Voeg toe"/>
+                    </form>
+                </td>
+            </tr>
+        </tfoot>
+    </table>
+</div>

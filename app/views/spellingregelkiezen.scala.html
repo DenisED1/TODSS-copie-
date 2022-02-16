@@ -1,0 +1,81 @@
+@import model.SpellingRegel
+@(spellingRegels : List[SpellingRegel])
+<div class="container">
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <h2>Spellingregels</h2>
+            <h4>Kies een spellingRegel die je wil oefenen.</h4>
+        </div>
+        <div class="panel-body">
+            <div class="panel-group" id="accordion">
+                @for((spellingRegel, index) <- spellingRegels.zipWithIndex){
+                    <div class="panel panel-default" >
+                        <div class="panel-heading" data-toggle="collapse" data-parent="#accordion" data-target="#collapse@index">
+                            <h4 class="panel-title">
+                                <a class="accordion-toggle">@spellingRegel.getNaam</a>
+                            </h4>
+                        </div>
+                        <div id="collapse@index" class="panel-collapse collapse">
+                            <div class="panel-body">
+                                <pre>@spellingRegel.getKorteUitleg</pre>
+                                <table>
+                                    <tr>
+                                        <td>
+                                            @*TODO Replace getNaam with getID*@
+                                            <form action="@routes.LeerlingController.beluisterUitleg()" method="POST" enctype="multipart/form-data" >
+                                                <input type="hidden" name="spellingregelnaam" value="@spellingRegel.getNaam"/>
+                                                <input type="submit" class="btn btn-primary" value="Uitleg beluisteren"/>
+                                            </form>
+                                        </td>
+                                        <td>
+                                            @*TODO Replace getNaam with getID*@
+
+                                            <form action="@routes.OpdrachtPrikkeldraadController.voorbereindendOefenen()" method="POST" enctype="multipart/form-data" id="prikkeldraadform@index">
+                                                <input type="hidden" name="spellingRegel" value="@spellingRegel.getNaam"/>
+                                                <input type="submit" class="btn btn-primary" value="Voorbereidend oefenen"/>
+                                            </form>
+                                        </td>
+                                        <td>
+                                            <form action="@routes.OpdrachtSpellingController.opdrachtMaken()" method="POST" enctype="multipart/form-data" id="opdrachtform@index" >
+                                                <input type="hidden" name="spellingregelid" value="@spellingRegel.getId"/>
+                                                <input type="submit" class="btn btn-primary" value="Opdracht maken"/>
+                                            </form>
+                                        </td>
+                                        <td>
+                                            <form action="@routes.ToetsController.toetsMaken()" method="POST" enctype="multipart/form-data" id="toetsform@index" >
+                                                <input type="hidden" name="spellingregelid" value="@spellingRegel.getId"/>
+                                                <input type="submit" class="btn btn-primary" value="Toets maken"/>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td></td>
+                                        <td>
+                                            <select form="prikkeldraadform@index" class="form-control" name="moeilijkheidsgraad">
+                                                <option selected>Makkelijk</option>
+                                                <option>Moeilijk</option>
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <select form="opdrachtform@index" class="form-control" name="moeilijkheidsgraad">
+                                                <option selected>Makkelijk</option>
+                                                <option>Moeilijk</option>
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <select form="toetsform@index" class="form-control" name="moeilijkheidsgraad">
+                                                <option selected>Makkelijk</option>
+                                                <option>Moeilijk</option>
+                                            </select>
+                                        </td>
+                                        <td></td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

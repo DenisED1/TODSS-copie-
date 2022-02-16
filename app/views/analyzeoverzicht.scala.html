@@ -1,0 +1,414 @@
+@import model.Gebruiker
+@import model.analyze.SpellingOpdracht.{AnalyzeSpellingAntwoord, AnalyzeSpellingOpdracht}
+@import model.analyze.Toets.{Toets, ToetsAntwoord}
+@import model.analyze.AnalyzeGeneriek
+
+@(datums : List[AnalyzeGeneriek], gebruiker : Gebruiker, opdrachten : List[AnalyzeSpellingOpdracht], woorden : List[AnalyzeSpellingAntwoord], toetsAntwoorden : List[ToetsAntwoord], toetsen : List[Toets])
+
+<style>
+    .btn{
+        width: 100%;
+        padding: 10px;
+        font-size: large;
+    }
+
+    .woordenRow{
+        visibility: hidden;
+    }
+</style>
+
+<script>
+    $(document).ready(function(){
+        $(".deletePerDatum").click(function(){
+            var id  = $(this).children('.regelId').html();
+
+            jsRoutes.controllers.AnalyzeOverzichtController.deletePerDatum(id).ajax({
+                dataType: "json",
+                success: function(data){
+                    console.log(data.msg);
+                    window.location.reload();
+                }
+            });
+
+
+        });
+
+        $(".deletePerOpdracht").click(function(){
+            var id = $(this).children('.regelId').html();
+
+            jsRoutes.controllers.AnalyzeOverzichtController.deletePerOpdracht(id).ajax({
+                dataType: "json",
+                success: function(data){
+                    console.log(data.msg);
+                    window.location.reload();
+                }
+            });
+
+        });
+        $(".deletePerToets").click(function(){
+            var id = $(this).children('.toetsRegelId').html();
+
+            jsRoutes.controllers.AnalyzeOverzichtController.deletePerToets(id).ajax({
+                dataType: "json",
+                success: function(data){
+                    console.log(data.msg);
+                    window.location.reload();
+                }
+            });
+
+        });
+
+        $(".opdrButton").click(function(){
+            // extracting number of rows in the table
+            var opdrId = $(this).children('.opdrachtId').html();
+            var div = $('#date_task_table'+opdrId);
+            var table = $('#woordenTable'+opdrId+' tbody');
+
+            var rows = div.find('.woordenTable tbody tr').length;
+
+            div.find('.aantalGemaakt').html(rows);
+
+            // calculating time difference
+            var beginTijd;
+            var eindTijd;
+
+            if((eindTijd = div.find('.eindTimestamp').html()) && (beginTijd = div.find('.beginTimestamp').html())){
+                var begin = new Date(beginTijd);
+                var eind = new Date(eindTijd);
+
+                var elapsedMs = eind - begin;
+                var elapsedMinutes = elapsedMs / 1000 / 60;
+                elapsedMinutes = elapsedMinutes.toFixed(0);
+
+                div.find('.tijdsDuur').html(elapsedMinutes );
+            } else{
+                div.find('.tijdsDuur').html("Tijdsduur kan niet berekend worden.");
+            }
+
+            var aantalGoed = 0;
+            var aantalFout = 0;
+
+            //extracting 'vraag' en 'antwoordDef' to compare
+            table.find('tr').each(function(i){
+                var $tds = $(this).find('td'),
+                    vraag = $tds.eq(0).text(),
+                    antwoordVersie1 = $tds.eq(1).text(),
+                    antwoordDef = $tds.eq(2).text();
+
+                if(vraag == antwoordDef){
+                    aantalGoed = aantalGoed + 1;
+                } else{
+                    aantalFout = aantalFout + 1;
+                }
+
+                if(vraag == antwoordDef && vraag == antwoordVersie1){
+                    $(this).remove();
+                }
+            });
+
+            div.find('.aantalGoed').html(aantalGoed);
+            div.find('.aantalFout').html(aantalFout);
+
+            //calculating percentages
+            if(rows != 0){
+                var percentageGoed = (aantalGoed/rows) * 100;
+                var percentageFout = (aantalFout/rows) * 100;
+
+                percentageGoed = percentageGoed.toFixed(2);
+                percentageFout = percentageFout.toFixed(2);
+                div.find('.percentageGoed').html(percentageGoed + "%");
+                div.find('.percentageFout').html(percentageFout + "%");
+            } else{
+                div.find('.percentageGoed').html("0%");
+                div.find('.percentageFout').html("0%");
+            }
+        });
+
+        $(".toetsButton").click(function(){
+            // extracting number of rows in the table
+            var toetsId = $(this).children('.toetsId').html();
+            var toetsDiv = $('#toetsDate_task_table'+toetsId);
+            var toetsTable = $('#toetsWoordenTable'+toetsId+' tbody');
+
+            var toetsRow = toetsDiv.find('.toetsWoordenTable tbody tr').length;
+
+            toetsDiv.find('.toetsAantalGemaakt').html(toetsRow);
+
+            // calculating time difference
+            var toetsBeginTijd = 0;
+            var toetsEindTijd = 0;
+
+            if((toetsEindTijd = toetsDiv.find('.toetsEindTimestamp').html()) && (toetsBeginTijd = toetsDiv.find('.toetsBeginTimestamp').html())){
+                var toetsBegin = new Date(toetsBeginTijd);
+                var toetsEind = new Date(toetsEindTijd);
+
+                var elapsedMs = toetsEind - toetsBegin;
+                var elapsedMinutes = elapsedMs / 1000 / 60;
+                elapsedMinutes = elapsedMinutes.toFixed(0);
+
+                toetsDiv.find('.toetsTijdsDuur').html(elapsedMinutes );
+            } else{
+                toetsDiv.find('.toetsTijdsDuur').html("Tijdsduur kan niet berekend worden.");
+            }
+
+            var toetsAantalGoed = 0;
+            var toetsAantalFout = 0;
+
+            //extracting 'vraag' en 'antwoordDef' to compare
+            toetsTable.find('tr').each(function(i){
+                var $tds = $(this).find('td'),
+                        toetsVraag = $tds.eq(0).text(),
+                        toetsAntwoordVersie1 = $tds.eq(1).text(),
+                        toetsAntwoordDef = $tds.eq(2).text();
+
+                if(toetsVraag == toetsAntwoordDef){
+                    toetsAantalGoed = toetsAantalGoed + 1;
+                } else{
+                    toetsAantalFout = toetsAantalFout + 1;
+                }
+
+                if(toetsVraag == toetsAntwoordDef && toetsVraag == toetsAntwoordVersie1){
+                    $(this).remove();
+                }
+            });
+
+            toetsDiv.find('.toetsAantalGoed').html(toetsAantalGoed);
+            toetsDiv.find('.toetsAantalFout').html(toetsAantalFout);
+
+            var toetsPercentageGoed = 0;
+            var toetsPercentageFout = 0;
+            //calculating percentages
+            if(toetsRow != 0){
+                toetsPercentageGoed = (toetsAantalGoed/toetsRow) * 100;
+                toetsPercentageFout = (toetsAantalFout/toetsRow) * 100;
+
+                toetsPercentageGoed = toetsPercentageGoed.toFixed(2);
+                toetsPercentageFout = toetsPercentageFout.toFixed(2);
+                toetsDiv.find('.toetsPercentageGoed').html(toetsPercentageGoed + "%");
+                toetsDiv.find('.toetsPercentageFout').html(toetsPercentageFout + "%");
+            } else{
+                toetsDiv.find('.toetsPercentageGoed').html("0%");
+                toetsDiv.find('.toetsPercentageFout').html("0%");
+            }
+        });
+    });
+</script>
+
+<div class="container">
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <h2>
+                Statistieken van @gebruiker.getVoornaam @gebruiker.getAchternaam
+            </h2>
+        </div>
+        <div id="accordionPanel" class="panel-body accordion">
+            @for(regel <- datums){
+
+                <div class="card">
+                    <div class="card-header" id="date@regel.getId">
+                        <h5 class="mb-0">
+                            <div class="col-md-11">
+                                <button class="btn btn-primary" type="button" data-toggle="collapse" data-target="#task@regel.getId" aria-expanded="false" aria-controls="task@regel.getId">
+                                    Datum: @regel.getDatum.format("dd-MM-YYYY")
+                                </button>
+                            </div>
+                            <div class="col-md-1">
+                                <button class="deletePerDatum btn btn-danger" type="button" contenteditable="false" style="padding: 2px; margin: 10px;">
+                                    <img src="@routes.Assets.at("images/delete.gif")" style="width:25px;"/>
+                                    <div class="regelId" hidden>@regel.getId</div>
+                                </button>
+                            </div>
+                        </h5>
+                    </div>
+
+                    <div id="task@regel.getId" class="collapse" aria-labelledby="date@regel.getId" data-parent="#accordionPanel">
+                        @for(opdr <- opdrachten.filter(_.getDatum == regel.getDatum)){
+                            <div class="card-body">
+
+                                <div class="card-header" id="date_task@regel.getId@opdr.getId">
+                                    <h5 class="mb-0">
+                                        <div class="col-md-11">
+                                            <button class="btn btn-secondary opdrButton" type="button" data-toggle="collapse" data-target="#date_task_table@opdr.getId" aria-expanded="false" aria-controls="date_task_table@opdr.getId">
+                                                Opdracht @opdr.getSpellingRegelNaam <div class="opdrachtId" hidden>@opdr.getId</div>
+                                            </button>
+                                        </div>
+                                        <div class="col-md-1">
+                                            <button class="deletePerOpdracht btn btn-danger" type="button" contenteditable="false" style="padding: 2px; margin: 10px;">
+                                                <img src="@routes.Assets.at("images/delete.gif")" style="width:25px;"/>
+                                                <div class="regelId" hidden>@opdr.getId</div>
+                                            </button>
+                                        </div>
+                                    </h5>
+                                </div>
+
+                                <div id="date_task_table@opdr.getId" class="collapse" aria-labelledby="date_task@regel.getId@opdr.getId" data-parent="#accordionPanel">
+                                    <div class="card-body">
+                                        <div class="col-md-4" style="margin: 10px;">
+                                            <table>
+                                                <tr>
+                                                    <td>Begintijd:</td>
+                                                    <td class="beginTijd">@opdr.getBeginTijdLocalTime</td>
+                                                    <td class="beginTimestamp" hidden>@opdr.getBeginTijd</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Eindtijd:</td>
+                                                    <td class="eindTijd">@opdr.getEindTijdLocalTime</td>
+                                                    <td class="eindTimestamp" hidden>@opdr.getEindTijd</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Tijdsduur (in minuten):</td>
+                                                    <td class="tijdsDuur"></td>
+                                                </tr>
+                                            </table>
+                                        </div>
+                                        <div class="col-md-3" style="margin: 10px;">
+                                            <table>
+                                                <tr>
+                                                    <td>Aantal gemaakte woorden:</td>
+                                                    <td class="aantalGemaakt"></td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Aantal woorden goed:</td>
+                                                    <td class="aantalGoed"></td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Aantal woorden fout:</td>
+                                                    <td class="aantalFout"></td>
+                                                </tr>
+                                            </table>
+                                        </div>
+                                        <div class="col-md-4" style="margin: 10px;">
+                                            <table>
+                                                <tr>
+                                                    <td>Percentage goed:</td>
+                                                    <td class="percentageGoed"></td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Percentage fout:</td>
+                                                    <td class="percentageFout"></td>
+                                                </tr>
+                                            </table>
+                                        </div>
+
+                                        <div class="col-md-11">
+                                            <table class="woordenTable table table-bordered table-striped" id="woordenTable@opdr.getId">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Vraag</th>
+                                                        <th>Antwoord versie 1</th>
+                                                        <th>Antwoord definitief</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @for(wrd <- woorden.filter(_.getRegelId == opdr.getId)){
+                                                        <tr>
+                                                            <td class="vraag">@wrd.getVraag</td>
+                                                            <td class="antwoordVersie1">@wrd.getAntwoordVersie1</td>
+                                                            <td class="antwoordDef">@wrd.getAntwoordDefinitief</td>
+                                                        </tr>
+                                                    }
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                        @for(toets <- toetsen.filter(_.getDatum == regel.getDatum)){
+                            <div class="toetsCard-body">
+
+                                <div class="toetsCard-header" id="toetsDate_task@regel.getId@toets.getId">
+                                    <h5 class="mb-0">
+                                        <div class="toetsCol-md-11">
+                                            <button class="btn btn-secondary toetsButton" type="button" data-toggle="collapse" data-target="#toetsDate_task_table@toets.getId" aria-expanded="false" aria-controls="date_task_table@toets.getId">
+                                                Toets @toets.getSpellingRegelNaam <div class="toetsId" hidden>@toets.getId</div>
+                                            </button>
+                                        </div>
+                                        <div class="toetsCol-md-1">
+                                            <button class="deletePerToets btn btn-danger" type="button" contenteditable="false" style="padding: 2px; margin: 10px;">
+                                                <img src="@routes.Assets.at("images/delete.gif")" style="width:25px;"/>
+                                                <div class="toetsRegelId" hidden>@toets.getId</div>
+                                            </button>
+                                        </div>
+                                    </h5>
+                                </div>
+
+                                <div id="toetsDate_task_table@toets.getId" class="collapse" aria-labelledby="toetsDate_task@regel.getId@toets.getId" data-parent="#accordionPanel">
+                                    <div class="toetsCard-body">
+                                        <div class="toetsCol-md-4" style="margin: 10px;">
+                                            <table>
+                                                <tr>
+                                                    <td>Begintijd:</td>
+                                                    <td class="toetsBeginTijd">@toets.getBeginTijdLocalTime</td>
+                                                    <td class="toetsBeginTimestamp" hidden>@toets.getBeginTijd</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Eindtijd:</td>
+                                                    <td class="toetsEindTijd">@toets.getEindTijdLocalTime</td>
+                                                    <td class="toetsEindTimestamp" hidden>@toets.getEindTijd</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Tijdsduur (in minuten):</td>
+                                                    <td class="toetsTijdsDuur"></td>
+                                                </tr>
+                                            </table>
+                                        </div>
+                                        <div class="toetsCol-md-3" style="margin: 10px;">
+                                            <table>
+                                                <tr>
+                                                    <td>Aantal gemaakte woorden:</td>
+                                                    <td class="toetsAantalGemaakt"></td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Aantal woorden goed:</td>
+                                                    <td class="toetsAantalGoed"></td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Aantalwoorden fout:</td>
+                                                    <td class="toetsAantalFout"></td>
+                                                </tr>
+                                            </table>
+                                        </div>
+                                        <div class="toetsCol-md-4" style="margin: 10px;">
+                                            <table>
+                                                <tr>
+                                                    <td>Percentage goed:</td>
+                                                    <td class="toetsPercentageGoed"></td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Percentage fout:</td>
+                                                    <td class="toetsPercentageFout"></td>
+                                                </tr>
+                                            </table>
+                                        </div>
+
+                                        <div class="toetsCol-md-11">
+                                            <table class="toetsWoordenTable table table-bordered table-striped" id="toetsWoordenTable@toets.getId">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Vraag</th>
+                                                        <th>Antwoord versie 1</th>
+                                                        <th>Antwoord definitief</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                @for(toetsWoord <- toetsAntwoorden.filter(_.getRegelId == toets.getId)){
+                                                    <tr>
+                                                        <td class="toetsVraag">@toetsWoord.getVraag</td>
+                                                        <td class="toetsAntwoordVersie1">@toetsWoord.getAntwoordVersie1</td>
+                                                        <td class="toetsAntwoordDef">@toetsWoord.getAntwoordDefinitief</td>
+                                                    </tr>
+                                                }
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>

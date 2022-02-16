@@ -1,0 +1,216 @@
+@import model.Uitleg
+@(uitlegList : List[Uitleg], spellingregelnaam : String)
+<link href="@routes.Assets.at("stylesheets/simple-sidebar.css")" rel="stylesheet">
+<div id="wrapper">
+        <div id="page-content-wrapper">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h2 id="titel"></h2>
+                </div>
+                <div class="panel-body">
+                    @for(uitleg <- uitlegList) {
+                        <table class="uitlegtable" id="@uitleg.getUuid">
+                        @for(uitlegRegel <- uitleg.getUitlegRegels) {
+                            <tr>
+                                <td>
+                                @if(uitlegRegel.getIcon() != null && uitlegRegel.getIconText() != null && uitlegRegel.getIcon().length() > 0) {
+                                    <img class="icon" src="@routes.Assets.at(uitlegRegel.getIcon())"/>
+                                    @uitlegRegel.getIconText
+                                }
+                                </td>
+                                <td class="content">
+                                    @if(uitlegRegel.isIntikken || uitlegRegel.isControleren){
+                                        <input type="text"/>
+                                    } else {
+                                        @uitlegRegel.getText
+                                    }
+                                </td>
+                                <td class="uitspraak">
+                                    <a id="uitspraakpath">
+                                    @if(uitlegRegel.getUitspraak.length > 0) {
+                                        @routes.Assets.at(uitlegRegel.getUitspraak)
+                                    }
+                                    </a>
+                                    <a id="wachttijd">@uitlegRegel.getWachttijd</a>
+                                    <a id="overschrijven">@uitlegRegel.isOverschrijven</a>
+                                    <a id="intikken">@uitlegRegel.isIntikken</a>
+                                    <a id="controleren">@uitlegRegel.isControleren</a>
+                                    <a id="text">@uitlegRegel.getText</a>
+                                </td>
+                            </tr>
+                        }
+                        </table>
+                    }
+                    <a class="btn btn-primary" id="startpausebtn" onclick="startPauze(this)">Start</a>
+                    <a class="btn btn-primary hidden" id="nextbtn" onclick="volgendeUitleg()">Volgende</a>
+                </div>
+            </div>
+        </div>
+    
+    <form action="@routes.OpdrachtPrikkeldraadController.voorbereindendOefenen()" method="POST" enctype="multipart/form-data"  id="redirectForm">
+        <input type="hidden" name="spellingRegel" value="@spellingregelnaam"/>
+    </form>
+</div>
+<script>
+    var uitleg = [];
+    @for(uitleg <- uitlegList){
+        this.uitleg.push({'id': '@uitleg.getUuid', 'titel': '@uitleg.getTitle'});
+    }
+    var currentUitlegIndex = 0;
+    var started = false;
+    var audios = [];
+    var audio = new Audio();
+    var i = 0;
+    var interval = 1000;
+    var timer;
+    $(document).ready(function(){
+        //zorgt voor het correct weergeven van html/opmaak
+        for(let content of document.getElementsByClassName("content")){
+            if (!content.innerHTML.includes("<input")) {
+                var frag = document.createRange().createContextualFragment(content.innerText);
+                content.innerText = "";
+                content.appendChild(frag);
+            }
+        }
+        readAudios();
+        $("#titel").text(uitleg[currentUitlegIndex].titel);
+        audio.addEventListener('loadeddata', function () {
+            audio.play();
+            if (audios[i + 1] != null) {
+                interval = (audio.duration) * 1000 + parseInt(audios[i][1].text());
+                timer = setInterval(function(){
+                    if(interval >= 100) interval -= 100;
+                    else {
+                        i++;
+                        playAudio();
+                        //Hier moet het woord opgelicht worden volgens mij
+                        clearInterval(timer);
+                        window.scrollBy(0, 1440);
+                    }
+                }, 100);
+            } else {
+                $("#nextbtn").removeClass('hidden');
+                $("#startpausebtn").hide();
+                startPauze($("#startpausebtn"));
+            }
+        });
+        audio.onerror = function() {
+            if (audios[i + 1] != null) {
+                interval = parseInt(audios[i][1].text());
+                timer = setInterval(function(){
+                    if(interval >= 100) interval -= 100;
+                    else {
+                        i++;
+                        playAudio();
+                        clearInterval(timer);
+                        window.scrollBy(0, 1440);
+                    }
+                }, 100);
+            } else {
+                $("#nextbtn").removeClass('hidden');
+                $("#startpausebtn").hide();
+                startPauze($("#startpausebtn"));
+            }
+        };
+    });
+    function readAudios(){
+        audios = [];
+        $("#" + uitleg[currentUitlegIndex].id).find("td.uitspraak").each(function(){
+            audios.push([$(this).find("#uitspraakpath"), $(this).find("#wachttijd"), $(this).find("#overschrijven"), $(this).find("#intikken"), $(this).find("#controleren"), $(this).find("#text")]);
+        });
+    }
+
+    function startPauze(clickedElement){
+        started = !started;
+        if(started && i < audios.length){
+            $(clickedElement).text("Pauze");
+            playAudio();
+        } else {
+            $(clickedElement).text("Start");
+            clearInterval(timer);
+        }
+    }
+    function playAudio(){
+        var row = $(audios[i][0]).closest("tr");
+        if(audios[i][2].text() == 'true') {
+            $($(row).prev()[0]).fadeOut(function () {
+                $(this).replaceWith(row);
+                $(row).fadeIn(function () {
+                    if(audios[i][3].text() == 'true')
+                        writeWord.write(audios[i][5].text(),row.find("input"));
+                    if(audios[i][4].text() == 'true') controleerWoord.controleer(audios[i][5].text(), row.find("input"));
+                    setAudioSrc();
+                });
+            });
+        } else {
+            row.fadeIn(function(){
+                if(audios[i][3].text() == 'true')
+                    writeWord.write(audios[i][5].text(),row.find("input"));
+                if(audios[i][4].text() == 'true') controleerWoord.controleer(audios[i][5].text(), row.find("input"));
+            });
+            setAudioSrc();
+        }
+    }
+
+    var controleerWoord = {
+        woord : '',
+        input: '',
+        controleer : function(woord, input){
+            this.woord = woord;
+            this.input = input;
+            $(this.input).val(this.woord);
+            interval += 500;
+            setTimeout(function(){
+                $(controleerWoord.input).parent().append(
+                    '<img id="goed" src="@routes.Assets.at("images/icons/goed.png")" style="width: 28px; padding: 1px;"/>'
+                );
+            },500);
+        }
+    };
+
+    var writeWord = {
+        word : '',
+        input : '',
+        currentval : '',
+        charindex: -1,
+        addLetter: function(){
+            this.charindex++;
+            this.currentval += this.word[this.charindex];
+            $(this.input).val(this.currentval);
+            if(this.word[this.charindex + 1] != null){
+                interval += 200;
+                setTimeout(function(){writeWord.addLetter();}, 200);
+            }
+        },
+        write: function(word, input){
+            this.word = word;
+            this.input = input;
+            this.currentval = '';
+            this.charindex = -1;
+            this.addLetter();
+        }
+    };
+
+    function setAudioSrc() {
+        try {
+            audio.src = audios[i][0].text();
+        } catch(err){
+            console.log('error with setting audio source');
+        }
+    }
+
+    function volgendeUitleg(){
+        if(currentUitlegIndex + 1 >= uitleg.length){
+            $('#redirectForm').submit();
+            return;
+        }
+        $("#nextbtn").addClass('hidden');
+        $("#startpausebtn").show();
+        $("#"+uitleg[currentUitlegIndex].id).remove();
+        i = 0;
+        currentUitlegIndex += 1;
+        readAudios();
+        $("#titel").text(uitleg[currentUitlegIndex].titel);
+        $("#startpausebtn").click();
+    }
+</script>

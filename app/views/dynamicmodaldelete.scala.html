@@ -1,0 +1,65 @@
+@import formpackage.InputField
+@(punt: String, action : String, inputfields : List[InputField])
+
+<form class="form-horizontal" id="modal-form" method="POST" action="@action" enctype="multipart/form-data">
+    <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal"> <span aria-hidden="true" class="">×   </span><span class="sr-only">Close</span>
+
+        </button>
+        <h4 class="modal-title" id="myModalTitle">Bevestig verwijderen</h4>
+    </div>
+    <div class="modal-body" id="modal-body">
+        <div id="alertbox">
+        </div>
+        <div>
+            U staat op het punt @punt te verwijderen, dit kan niet ongedaan gemaakt worden.
+            <br>
+            Weet u zeker dat u dit wilt doen?
+        </div>
+        <fieldset>
+        @for(inputfield <- inputfields){
+            @if(inputfield.getHtmlInputType.name() == "hidden"){
+                <input name="@inputfield.getName" type="@inputfield.getHtmlInputType.name()" class="form-control input-md" @inputfield.getRequired value="@inputfield.getValue" />
+            }
+        }
+        </fieldset>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Annuleren</button>
+        <button type="submit" id="submit" class="btn btn-danger">Verwijderen</button>
+    </div>
+</form>
+<script>
+    $(document).ready($("#modal-form").submit(function(e){
+        e.preventDefault();
+        saveChanges();
+    }));
+    function saveChanges() {
+        //get the action-url of the form
+        var actionurl = $("#modal-form").attr('action');
+        var method = $("#modal-form").attr('method');
+        var loc = location;
+        $.ajax({
+            url: actionurl,
+            type: method,
+            data: new FormData($("#modal-form")[0]),
+            contentType : false,
+            processData: false,
+            success: function(data){
+                window.onbeforeunload = function() {
+                    localStorage.setItem("message", data);
+                };
+                loc.reload(true);
+            },
+            error : function(errormessage){
+                $("#alertbox").text("");
+                $("#alertbox").append(
+                    '<div id="inner-message" class="alert alert-danger fade in alert-dismissable" style="margin: 0 auto; margin-bottom: 10px;">' +
+                    '<a href="#" class="close" data-dismiss="alert" aria-label="close" title="close">×</a>' +
+                    errormessage.responseText +
+                    '</div>'
+                );
+            }
+        });
+    }
+</script>

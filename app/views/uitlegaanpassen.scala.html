@@ -1,0 +1,342 @@
+@import formpackage.UitlegForm
+@import model.UitlegRegel
+@(spellingregelnaam : String, uitlegRegels : List[UitlegRegel], uitlegForm : UitlegForm)
+<link href="@routes.Assets.at("stylesheets/simple-sidebar.css")" rel="stylesheet">
+<script src="@routes.Assets.at("javascripts/savesoundfile.js")"></script>
+@*<script src="https://code.jquery.com/jquery-3.4.1.js"></script>*@
+<link href="https://cdnjs.cloudflare.com/ajax/libs/summernote/0.8.12/summernote-lite.css" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/summernote/0.8.12/summernote-lite.js"></script>
+
+    <div class="panel panel-default">
+            <form id="uitlegform" method="POST" action="@routes.UitlegController.createUitleg()" enctype="multipart/form-data" class="form-horizontal">
+            <div class="panel-heading">
+                <h2>
+                    Titel:
+                    <input style="width: 50%;" type="text" id="title" placeholder="titel" name="titel" maxlength="50" value="@uitlegForm.getNieuweTitel" tabindex="1" required/>
+                </h2>
+                <h3>
+                    Volgorde:
+                    <input type="number" id="volgorde" name="volgorde"  tabindex="2" size="3" min="1" max="999"
+                            value="@uitlegForm.getNieuweVolgorde"
+                    required/>
+                </h3>
+                <input type="hidden" id="uuid" value="@uitlegForm.getUuid" name="uuid"/>
+                <h3>
+                    Standaard wachttijd (ms):
+                    <input type="number" value="1000" id="standaardWachttijd" onchange="setStandaardWachtijd(this.value)" min="0" max="99999" size="20"/>
+                    (1000ms=1sec)
+                </h3>
+            </div>
+            <div class="panel-body">
+                <ul id="sortable">
+                    @for(uitlegRegel <- uitlegRegels){
+                        <li class="ui-state-default unsortable">
+                            <a style="float: right;padding-left: 6px;padding-right: 6px;padding-top: 1px;padding-bottom: 2px;" class='btn btn-danger' id='delete' href="javascript:void(0)" onclick='$(this).parent().remove();'>x</a>
+                            <table class="table-bordered" style="width: 95%; maring-top: 1%; margin: 0 auto;">
+                                <tr>
+                                    <th>Icon</th>
+                                    <th>Icontext</th>
+                                    <th>Text</th>
+                                    <th>Uitspraak</th>
+                                </tr>
+                                <tr style="width: 100%;">
+                                    <td class="icontd">
+                                        <a class="hidden" id="iconpath">@uitlegRegel.getIcon</a>
+                                        <img id="icon" src="@routes.Assets.at(uitlegRegel.getIcon())"/>
+                                        <br/>
+                                        <label class="btn btn-primary">
+                                            <input type="file" id="imageselector" accept="image/*" onchange="showicon(this)" style="display: none;" name="icon"/>
+                                            Selecteer icoon...
+                                        </label>
+                                    </td>
+                                    <td>
+                                        <input type="text" value="@uitlegRegel.getIconText" name="iconText" maxlength="50" size="15"/>
+                                    </td>
+                                    <td>
+                                        <input id="summernote" type="text" name="text" style="width: 90%;" tabindex="2" maxlength="250" size="50" value="@uitlegRegel.getText"/>
+                                        <label style="margin-bottom: 1px; font-weight: normal; font-size: smaller;">
+                                            <input type="checkbox" name="overschrijven"
+                                            @if(uitlegRegel.isOverschrijven){
+                                                checked
+                                            }
+                                            />
+                                            Vorige overschrijven?
+                                            <input type="checkbox" name="intikken"
+                                            @if(uitlegRegel.isIntikken){
+                                                checked
+                                            }
+                                            />
+                                            Woord intikken?
+                                            <input type="checkbox" name="controleren"
+                                            @if(uitlegRegel.isControleren){
+                                                checked
+                                            }
+                                            />
+                                            Woord controleren?
+                                        </label>
+                                    </td>
+                                    <td>
+                                        <label class="btn btn-primary" >
+                                            <input name="uitspraak" type="file" accept=".mp3" onchange="filechange(this)" style="display:none;" value="@uitlegRegel.getUitspraak" />
+                                            Selecteer uitspraak...
+                                        </label>
+                                        <label style="margin-bottom: 1px; font-weight: normal; font-size: smaller;">
+                                            <input type="number" name="wachttijd" class="wachttijd" value="@uitlegRegel.getWachttijd" min="0" max="99999" size="4"/>
+                                            Wachttijd (ms)
+                                        </label>
+                                        <span class='label label-info' id="upload-file-info">@uitlegRegel.getUitspraak</span>
+                                        <br/>
+                                        <audio id="soundfile" src="@routes.Assets.at(uitlegRegel.getUitspraak)" controls></audio>
+                                    </td>
+                                </tr>
+                            </table>
+                        </li>
+                    }
+                </ul>
+                <a class="btn btn-primary" onclick="goBack()">Terug</a>
+                <a class="btn btn-primary" id="addrow">+</a>
+                <input type="submit" class="btn btn-primary" value="Opslaan"/>
+
+                <div id="template" class="hidden">
+                    <li class="ui-state-default unsortable">
+                        <a style="float: right;padding-left: 6px;padding-right: 6px;padding-top: 1px;padding-bottom: 2px;"  class="btn btn-danger" id="delete" href="javascript:void(0)"  onclick="$(this).parent().remove();">x</a>
+                        <table class="table-bordered" style="width: 95%; maring-top: 1%; margin: 0 auto;">
+                            <tr>
+                                <th>Icon</th>
+                                <th>Icontext</th>
+                                <th>Text</th>
+                                <th>Uitspraak</th>
+                            </tr>
+                            <tr style="width: 100%;">
+                                <td class="icontd">
+                                    <a class="hidden" name="iconpath" id="iconpath"></a>
+                                        <img id="icon" src=""/>
+                                    <br/>
+                                    <label class="btn btn-primary">
+                                        <input type="file" id="imageselector" accept="image/*:" onchange="showicon(this)" style="display: none;" name="icon"/>
+                                        Selecteer icoon
+                                    </label>
+                                </td>
+                                <td>
+                                    <input type="text" name="iconTex" maxlength="50"  size="15">
+                                </td>
+                                <td>
+                                    <input id="summernote" type="text" name="text" style="width: 90%;" tabindex="2" maxlength="250" size="50" value=""/>
+                                    <label style="margin-bottom: 1px; font-weight: normal; font-size: smaller;">
+                                    <input type="checkbox" name="overschrijven"/>
+                                        Vorige overschrijven?
+                                    <input type="checkbox" name="intikken"/>
+                                        Woord intikken?
+                                    <input type="checkbox" name="controleren"/>
+                                        Woord controleren?
+                                    </label>
+                                </td>
+                                <td>
+                                    <label class="btn btn-primary"  >
+                                        <input name="uitspraak" type="file" accept=".mp3" onchange="filechange(this)" style="display:none;" value=""/>
+                                        Selecteer uitspraak...
+                                    </label>
+
+                                    <label style="margin-bottom: 1px; font-weight: normal; font-size: smaller;">
+                                        @*TODO Change wachttijd to the standard wachttijd*@
+                                        <input type="number" name="wachttijd" class="wachttijd" value="1000" min="0" max="99999" size="4"/>
+                                        Wachttijd (ms)
+                                    </label>
+                                    <span class='label label-info' id="upload-file-info"></span>
+                                    <br/>
+                                    <audio id="soundfile" src="" controls></audio>
+                                </td>
+                            </tr>
+                        </table>
+                    </li>
+                </div>
+                <script>
+                    $(document).ready(function() {
+                        $('[id=summernote]').summernote();
+                        $('[class=note-editable]').find('p').each(function(){
+                            var text = $(this).closest('td').find('input#summernote').val();
+                            $(this).text(text);
+                        });
+                        for(let content of document.getElementsByClassName("note-editable")){
+                            if (content.firstChild.innerText != ""){
+                                var frag = document.createRange().createContextualFragment(content.firstChild.innerText);
+                                content.removeChild(content.firstChild);
+                                content.appendChild(frag);
+                            }
+                            else{
+                                content.removeChild(content.firstChild);
+                                var text = document.createElement('p');
+                                text.innerText = 'Typ hier';
+                                content.appendChild(text);
+                            }
+                        }
+                    });
+
+                    $( function() {
+                        $("#sortable").sortable({
+                            cancel: "input, textarea, .note-editor",
+                            placeholder: "ui-state-highlight",
+                            start: function (e, ui) {
+                                ui.placeholder.height(ui.item.height());
+                            }
+                        });
+                        // $("#sortable").disableSelection();
+                    } );
+
+                    var standaardWachtTijd = 1000;
+                    $("#addrow").click(function (e) {
+                        e.preventDefault();
+                        var $sortable = $("#sortable");
+                        $sortable.append($("#template").html());
+
+                        $sortable.find(".wachttijd").last().val(standaardWachtTijd)
+                        $sortable.sortable('refresh');
+                    });
+
+                    $("#delete").click(function(e){
+                        e.preventDefault();
+                        $(this).parent().remove();
+                    });
+
+                    $("#uitlegform").submit(function(e){
+                        e.preventDefault();
+
+                        var formData = new FormData();
+                        formData.append("spellingregelnaam", "@spellingregelnaam");
+                        var inputs = {};
+                        inputs["title"] = $("#title").val();
+                        inputs["volgorde"] = $("#volgorde").val();
+                        inputs["uuid"] = $("#uuid").val();
+
+                        $("#sortable li").each(function(index, li){
+                            var listitem = $(li);
+                            var input = {};
+                            $(listitem).find("input, textarea").each(function (i,e) {
+                                var elemname = $(e).attr('name');
+                                if (elemname == 'uitspraak') {
+                                    if (e.files[0] != null) {
+                                        var file = e.files[0];
+                                        var filename = elemname + index;
+                                        input[elemname] = filename;
+                                        formData.append(filename, file, file.name);
+                                    } else {
+                                        var filepath = findSiblingWithId(e, 'upload-file-info').innerText;
+                                        if (filepath.length > 0)
+                                            input['uitspraakpath'] = filepath;
+                                    }
+                                    /*var audiosrc = findSiblingWithId(e, 'soundfile').src;
+                                     if(audiosrc.includes('blob:'))
+                                     input[$(e).attr('name')] = findSiblingWithId(e, 'soundfile').src;*/
+                                } else if (elemname == 'icon') {
+                                    if (e.files[0] != null) {
+                                        var file = e.files[0];
+                                        var filename = elemname + index;
+                                        input[elemname] = filename;
+                                        formData.append(filename, file, file.name);
+                                    } else {
+                                        var filepath = findSiblingWithId(e, 'iconpath').innerText;
+                                        if (filepath.length > 0)
+                                            input['iconpath'] = filepath;
+                                    }
+                                } else if (elemname == 'overschrijven' || elemname == 'intikken' || elemname == 'controleren'){
+                                    input[elemname] = '' + $(e).is(':checked');
+                                } else if (elemname == 'text'){
+                                    input[elemname] = $(e).closest('td').find('.note-editable').html();
+                                } else if (elemname != 'uitspraak'){
+                                    input[elemname] = $(e).val();
+                                }
+                            });
+                            inputs[Object.keys(inputs).length] = input;
+                        });
+                        for(var index in inputs){
+                            formData.append(index,JSON.stringify(inputs[index]));
+                            /*for(var key in inputs[index]){
+                                formData.append(index,inputs[index][key]);
+                                console.log(key + ': ' + inputs[index][key]);
+                            }*/
+                        }
+                        /*$.ajax({
+                            url: $("#uitlegform").attr('action'),
+                            type: $("#uitlegform").attr('method'),
+                            data: JSON.stringify(inputs),
+                            contentType: "application/json; charset=utf-8",
+                            dataType: "json",
+                            success: function(data){
+                                console.log(data);
+                            }
+                        });*/
+                        var xhr = new XMLHttpRequest();
+                        // Open the connection.
+                        xhr.open($("#uitlegform").attr('method'), $("#uitlegform").attr('action'), true);
+                        xhr.send(formData);
+                        xhr.onreadystatechange = function (oEvent) {
+                            if (xhr.readyState === 4) {
+                                if (xhr.status === 200) {
+                                    window.location.href = JSON.parse(xhr.responseText).redirect;
+                                } else {
+                                    console.log("Error", xhr.statusText);
+                                    console.log(xhr.responseText)
+                                }
+                            }
+                        };
+                        /*$.ajax({
+                            url: $("#uitlegform").attr('action'),
+                            type: $("#uitlegform").attr('method'),
+                            data: formData,
+                            contentType : false,
+                            processData: false,
+                            success: function(data){
+                                console.log(data);
+                            }
+                        });*/
+                    });
+
+                    function setStandaardWachtijd(value) {
+                        standaardWachtTijd = value;
+                        
+                        $("input[class='wachttijd']").each(function (index, element) {
+                            element.value = value;
+                        });
+                    }
+
+                    function showicon(e){
+                        var filelist = $(e)[0].files;
+                        for (var i = 0; i < filelist.length; i++) {
+                            var file = filelist[i];
+                            var reader = new FileReader();
+                            reader.onloadend = function() {
+                                findSiblingWithId(e, "icon").src = reader.result;
+                            };
+                            reader.readAsDataURL(file);
+                        }
+                    }
+
+                    function goBack() {
+                        window.history.back();
+                        return false;
+                    }
+                </script>
+            </div>
+        </form>
+        @*The MIT License (MIT)*@
+
+        @*Copyright (c) 2015~ Summernote Team (https://github.com/orgs/summernote/people)*@
+
+        @*Permission is hereby granted, free of charge, to any person obtaining a copy*@
+        @*of this software and associated documentation files (the "Software"), to deal*@
+        @*in the Software without restriction, including without limitation the rights*@
+        @*to use, copy, modify, merge, publish, distribute, sublicense, and/or sell*@
+        @*copies of the Software, and to permit persons to whom the Software is*@
+        @*furnished to do so, subject to the following conditions:*@
+
+        @*The above copyright notice and this permission notice shall be included in*@
+        @*all copies or substantial portions of the Software.*@
+
+        @*THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR*@
+        @*IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,*@
+        @*FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE*@
+        @*AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER*@
+        @*LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,*@
+        @*OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN*@
+        @*THE SOFTWARE.*@
+    </div>

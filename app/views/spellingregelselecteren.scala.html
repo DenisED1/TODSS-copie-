@@ -1,0 +1,83 @@
+@import model.SpellingRegel
+@(spellingRegels : List[SpellingRegel], modal : Html)
+
+@modal
+
+<div class="container">
+    <h2>Spellingsregels</h2>
+    <table class="table table-bordered table-striped">
+        <thead>
+            <tr>
+                <th>Naam</th>
+                <th>Edit</th>
+                <th>Verwijderen</th>
+            </tr>
+        </thead>
+        <tbody>
+            @for(spellingRegel <- spellingRegels){
+                <tr>
+                    <td id="spellingregelnaam">@spellingRegel.getNaam</td>
+                    <td>
+                        <form method="POST" enctype="multipart/form-data" action="@routes.SpellingregelController.beheer()">
+                            <input type="hidden" name="spellingregelnaam" value="@spellingRegel.getNaam"/>
+                            <input type="submit"  class="btn btn-primary" value="Klik om aan te passen"/>
+                        </form>
+                    </td>
+                    <td>
+                        <button class="btn btn-danger" data-toggle="modal" data-target="#deleteModal" id="delete" contenteditable="false" style="padding: 2px;">
+                            <img id="delete" src="@routes.Assets.at("images/delete.gif")" style="width:25px;"/>
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+        <tfoot>
+            <tr>
+                <td>
+                    <button class="btn btn-primary" data-toggle="modal" data-target="#myModal" contenteditable="false">Voeg toe</button>
+                </td>
+            </tr>
+        </tfoot>
+    </table>
+</div>
+
+<script>
+        $(document).ready(function() {
+            $(".btn[data-target='#myModal']").click(function (event) {
+                $.post("/spellingregelmodal/create", function(data){
+                    console.log("waza");
+                    $("#modal-content").text("");
+                    $("#modal-content").append(data);
+                    $('#myDynamicModal').modal('show');
+                });
+            });
+
+            $(".btn[data-target='#deleteModal']").click(function (event) {
+                showModal(this, event, "/spellingregelmodal/");
+            });
+
+            function showModal(self, event, urlpart){
+                var tablerow =  $(self).closest("tr");
+                var params = {};
+                $(tablerow).find('td').each(function (i, elem) {
+                    var tdid = $(elem).attr('id');
+                    if(tdid != null){
+                        if(tdid == 'uitspraak')
+                            params[tdid] = $(elem).find("audio").attr('src');
+                        else
+                            params[tdid] = $(elem).text();
+                    }
+                });
+                $.ajax({
+                    type: "POST",
+                    url: urlpart + event.target.id,
+                    data: params,
+                    success: function (data){
+                        $("#modal-content").text("");
+                        $("#modal-content").append(data);
+                        $('#myDynamicModal').modal('show');
+                    }
+                });
+            }
+        });
+</script>

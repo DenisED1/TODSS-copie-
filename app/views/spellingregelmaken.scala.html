@@ -1,0 +1,367 @@
+@import model.Woord
+@(aantalWoorden : Integer, woord : Woord, fileName : String, hoezithet : String)
+<link href="@routes.Assets.at("stylesheets/simple-sidebar.css")" rel="stylesheet">
+<script src="@routes.Assets.at("javascripts/close-pixelate.js")"></script>
+    <!-- Modal -->
+    <div class="modal fade" id="nadenkenModal" role="dialog">
+        <div class="modal-dialog">
+            <!-- Modal content-->
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    <h4 class="modal-title">Hoe zit het?</h4>
+                </div>
+                <div class="modal-body">
+                    <pre>@hoezithet</pre>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Terug</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel panel-default">
+        <div class="panel-body">
+            <a class="btn btn-primary" id="nextbtn" style="float: right;">Volgende</a>
+            <table>
+                <tr style="width: 100%;">
+                    <td class="tablecol" id="horen">
+                        <button class="btn playAudioBtn">
+                            <image src="@routes.Assets.at("images/icons/horen.png")"></image>
+                        </button>
+
+                        <div class="text-center text-hulp">
+                            Ik luister
+                        </div>
+                    </td>
+
+                    <td class="tablecol" id="nazeggen">
+                        <img id="nazeggen" src="@routes.Assets.at("images/icons/nazeggen.png")"/>
+
+                        <div class="text-center text-hulp">
+                            Ik zeg na
+                        </div>
+                    </td>
+                    <td class="tablecol" id="klankgroepzeggen">
+                        <img src="@routes.Assets.at("images/icons/klankgroepzeggen.png")"/>
+
+                        <div class="text-center text-hulp">
+                            Ik zeg na in klankgroepen
+                        </div>
+                    </td>
+                    <td class="tablecol" id="nadenken">
+                        <button type="button" class="btn" data-toggle="modal" data-target="#nadenkenModal">
+                            <img src="@routes.Assets.at("images/icons/Question_Mark.png")"/>
+                        </button>
+
+                        <div class="text-center text-hulp">
+                            Ik denk aan regels
+                        </div>
+                    </td>
+                    <td class="tablecol" id="intikken">
+                        <img src="@routes.Assets.at("images/icons/intikken.png")"/>
+
+                        <input id="ingetyptwoord" value="" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+
+                        <div class="text-center text-hulp">
+                            Ik typ
+                        </div>
+                    </td>
+                    <td class="tablecol" id="controleren">
+                        <img src="@routes.Assets.at("images/icons/controleren.png")"/>
+
+                        <form method="POST" action="" id="antwoordform" enctype="multipart/form-data">
+                            <input id="controlewoord" type="text" value="" name="antwoord" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+                            <img src="@routes.Assets.at("images/icons/goed.png")" id="goed" style="width:25px;"/>
+                            <div id="fout">
+                                <div class="vraag" style="font-weight: bold; font-size: 14px;"></div>
+                                <div class="gemaaktAntwoord" style="color: #909090; font-size: 14px;"></div>
+                            </div>
+                        </form>
+
+                        <div class="text-center text-hulp">
+                            Ik controleer
+                        </div>
+                    </td>
+                </tr>
+            </table>
+            <table style="width: 100%;">
+                <tr style="width: 100%;">
+                    <td>
+                        <div class="progress">
+                            <div class="progress-bar" role="progressbar" id="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="@aantalWoorden">
+                                0/@aantalWoorden
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                <tr style="width: 100%; height: 300px">
+                    <td>
+                        <div style="margin: 0 auto; text-align: center;">
+                            <img id="spelimghidden" class="spelletje" src="@routes.Assets.at("images/opdracht/" + fileName)" style="height: 300px; width: 100%; display: none;" />
+                            <img id="spelimg" class="spelletje"  />
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+<style>
+    img {
+        max-width: 100%;
+        max-height: 100%;
+    }
+    .tablecol {
+        width: 10%;
+        max-width: 20%;
+        transition: 500ms;
+    }
+
+    .border {
+        border: 2px solid #7f0076;
+        border-radius: 20px;
+    }
+
+    .spelletje{
+        height: 300px; margin: 0 auto;
+    }
+</style>
+<script type="text/javascript">
+$(document).ready(function(){
+    var audio = new Audio("@routes.Assets.at(woord.getUitspraak())");
+    var audioGaVolgende = true;
+    var beantwoord = 0;
+    var pixels = @aantalWoorden * 2;
+
+    var $progressbar = $('#progressbar'),
+            $ingetyptwoord  = $("#ingetyptwoord"),
+            $controlewoord  = $("#controlewoord"),
+            $goed           = $("#goed"),
+            $fout           = $("#fout"),
+            $nextbtn        = $("#nextbtn");
+
+    var $foutVraag = $fout.find('.vraag'),
+            $foutAntwoord = $fout.find('.gemaaktAntwoord');
+
+    setProgress(0);
+    reset();
+
+    var opdrachten = ["horen", "nazeggen", "klankgroepzeggen", "nadenken", "intikken", "controleren", "controleerAntwoord"];
+    var huidigeOpdracht = 0;
+    var klaar = false;
+    var remainDisabled = true;
+
+    var oudeVraag = "@woord.getWoord";
+
+    $nextbtn.click(function(){
+        volgendeOpdracht();
+    });
+
+    function volgendeOpdracht(){
+        if(huidigeOpdracht === 0){
+            reset();
+        }
+
+        if(klaar){
+            window.location.href = "@routes.LeerlingController.spellingregelKiezen()";
+        }
+
+        delayVolgendeKnop();
+
+        //Activeer de huidige opdracht/Deactiveer de vorige opdracht.
+        if(huidigeOpdracht > 0){
+            deactivate(opdrachten[huidigeOpdracht - 1]);
+        }
+        activate(opdrachten[huidigeOpdracht]);
+
+        //Roep opdracht specifieke code aan
+        roepFunctieAan(opdrachten[huidigeOpdracht]);
+
+        //Zorg dat de volgende opdracht goed is.
+        if(huidigeOpdracht < opdrachten.length){
+            huidigeOpdracht += 1;
+        }
+    }
+
+    function roepFunctieAan(functie){
+        switch (functie){
+            case "horen":
+                horen();
+                break;
+            case "nazeggen":
+                nazeggen();
+                break;
+            case "intikken":
+                intikken();
+                break;
+            case "controleren":
+                controleren();
+                break;
+            case "controleerAntwoord":
+                controleerAntwoord();
+                break;
+        }
+    }
+
+    function horen(){
+        remainDisabled = true;
+
+        playAudio();
+
+        audio.onended = function() {
+            //Zodat als hij meerdere keren word afgespeeld dat hij volgendeOpdracht niet aanroept.
+            if(audioGaVolgende === true){
+                audioGaVolgende = false;
+
+                volgendeOpdracht();
+            }
+        };
+    }
+
+    function nazeggen() {
+        enableDisabledVolgendeKnop();
+    }
+
+    function intikken() {
+        $ingetyptwoord.show().focus();
+
+        //TODO check of je wat getypt hebt
+    }
+
+    function controleren() {
+        $ingetyptwoord.attr('disabled','disabled');
+
+        $controlewoord.show()
+            .val($ingetyptwoord.val())
+            .focus();
+    }
+
+    function controleerAntwoord(){
+        remainDisabled = true;
+        var antwoord = $controlewoord.val();
+        var antwoord1versie = $ingetyptwoord.val();
+
+        jsRoutes.controllers.OpdrachtSpellingController.checkAntwoord(antwoord, antwoord1versie).ajax({
+            dataType: "json",
+            success : function(data) {
+                beantwoord += 1;
+                audio = new Audio(data.uitspraak);
+                audioGaVolgende = true;
+
+                setProgress(beantwoord);
+                if (data.error){
+                    alert("Er is iets misgegaan, selecteer de opdracht opnieuw.");
+                }
+
+                if (data.goed) {
+                    $goed.show();
+                    pixels -= 2;
+                    pixelate(pixels);
+                } else {
+                    $foutVraag.html(oudeVraag);
+                    $foutAntwoord.html(antwoord);
+                    $fout.show();
+                }
+
+                if (data.finished) {
+                    pixelate(0);
+                    $nextbtn.text("Naar spellingRegel kiezen");
+                    klaar = true;
+                } else {
+                    oudeVraag = data.vraag;
+                    huidigeOpdracht = 0;
+                }
+            },
+            complete: function(){
+                enableDisabledVolgendeKnop();
+            }
+        });
+    }
+
+    function reset(){
+        //Reset de divs voor een nieuw woord.
+        $ingetyptwoord.removeAttr('disabled').val("").hide();
+        $controlewoord.hide();
+        $goed.hide();
+        $fout.hide();
+        $fout.val("");
+
+        pixelate(pixels);
+    }
+
+    function delayVolgendeKnop(){
+        $nextbtn.attr('disabled','disabled');
+        setTimeout(function(){
+
+            if(!remainDisabled){
+                $nextbtn.removeAttr('disabled');
+            }
+        },1000)
+    }
+
+    function enableVolgendeKnop() {
+        $nextbtn.removeAttr('disabled');
+    }
+
+    function enableDisabledVolgendeKnop(){
+        remainDisabled = false;
+
+        setTimeout(function(){
+            enableVolgendeKnop();
+        },1000)
+    }
+
+    function activate(elementid){
+        var $element = $('#' + elementid);
+
+        $element.css('width', 20 + '%');
+        $element.addClass('border');
+
+        $element.children(".text-hulp").css('font-size', '25px');
+    }
+
+    function deactivate(elementid){
+        var $element = $('#' + elementid);
+
+        $element.css('width', 10 + '%');
+        $element.removeClass('border');
+
+        $element.children(".text-hulp").css('font-size', '16px');
+    }
+
+    function setProgress(progress){
+        $progressbar.css('width', (progress/@aantalWoorden) * 100 + '%');
+        $progressbar.text(progress + "/@aantalWoorden");
+    }
+
+    function pixelate(res){
+        new ClosePixelation( document.getElementById('spelimghidden'), [
+            { resolution : res, shape:"circle"}
+        ]);
+    }
+
+    function playAudio(){
+        audio.play();
+    }
+
+    $(window).keydown(function(event){
+        if(event.keyCode === 13) {
+            event.preventDefault();
+
+            if(!$nextbtn.attr('disabled'))
+            {
+                $nextbtn.click();
+            }
+
+            return false;
+        }
+    });
+
+    $(".playAudioBtn").click(function(){
+        playAudio();
+    })
+
+});
+</script>

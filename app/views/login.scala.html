@@ -1,0 +1,76 @@
+@import formpackage.InputField
+@(inputfields : List[InputField])
+
+<link rel="stylesheet" media="screen" href="@routes.Assets.at("stylesheets/login.css")">
+<div id="fullscreen_bg" class="fullscreen_bg"/>
+
+<div class="container">
+
+    <form class="form-signin" id="login-form" action="@routes.LoginController.login()" enctype="multipart/form-data" method="post">
+        <h1 class="form-signin-heading text-muted">Login</h1>
+        @for(inputfield <- inputfields) {
+            <input type="@inputfield.getHtmlInputType" class="login-form" placeholder="@inputfield.getValue" name="@inputfield.getName" required="" autofocus="" value="@flash().get(inputfield.getValue)">
+        }
+        <button class="btn btn-lg btn-primary btn-block" type="submit" id="loginbutton">
+            Login
+        </button>
+    </form>
+    <div class="col-md-4 col-md-offset-4">
+        <div id="errors">
+
+        </div>
+    </div>
+</div>
+<script>
+    $(document).ready( function(){
+        var $form = $("#login-form");
+        var $errors = $("#errors");
+
+        $form.submit(function(e){
+            e.preventDefault();
+            saveChanges();
+        });
+
+        function saveChanges() {
+            //get the action-url of the form
+            var actionurl = $form.attr('action');
+            var method = $form.attr('method');
+
+            $.ajax({
+                url: actionurl,
+                type: method,
+                data: new FormData($form[0]),
+                contentType : false,
+                processData: false,
+                dataType: "json",
+                success: function(data){
+                    console.log(data);
+                    window.location.href = data.redirect;
+                },
+                error : function(jsondata){
+                    $errors.text("");
+
+                    var errormessages = "";
+
+                    try {
+                        errormessages = JSON.parse(jsondata.responseText);
+                    } catch(err){
+                        console.log(err);
+                    }
+
+                    for(var i = 0; i < errormessages.length; i++){
+                        var errormessage = errormessages[i];
+                        $errors.append(
+                            '<div id="inner-message" class="alert alert-danger fade in alert-dismissable" style="margin: 0 auto 10px;">' +
+                                '<a href="#" class="close" data-dismiss="alert" aria-label="close" title="close">×</a>' +
+                                errormessage +
+                            '</div>'
+                        );
+                    }
+
+                }
+            });
+        }
+    });
+</script>
+

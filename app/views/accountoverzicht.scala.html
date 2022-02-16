@@ -1,0 +1,131 @@
+@import model.Gebruiker
+@(gebruikers : List[Gebruiker], modal : Html)
+
+@modal
+<script>
+    function showModal(self, event, urlpart){
+        var tablerow =  $(self).closest("tr");
+        var params = {};
+        $(tablerow).find('td').each(function (i, elem) {
+            var tdid = $(elem).attr('class');
+            if(tdid != null){
+                params[tdid] = $(elem).text();
+            }
+        });
+
+        var url = urlpart + $(self).attr("data-url");
+        $.ajax({
+            type: "POST",
+            url: url,
+            data: params,
+            success: function (data){
+                $("#modal-content").text("");
+                $("#modal-content").append(data);
+                $('#myDynamicModal').modal('show');
+            }
+        });
+    }
+</script>
+<script>
+    $(document).ready(function() {
+        $(".btn[data-target='#persoonsgegevensModal']").click(function (event) {
+            showModal(this, event, "/gebruiker/modal/");
+        });
+        $(".btn[data-target='#inloggegevensModal']").click(function (event) {
+            showModal(this, event, "/gebruiker/modal/");
+        });
+        $(".btn[data-target='#registeruserModal']").click(function (event) {
+            showModal(this, event, "/gebruiker/modal/");
+        });
+        $(".btn[data-target='#deleteuserModal']").click(function (event) {
+            showModal(this, event, "/gebruiker/modal/");
+        });
+
+        $(".analyzeButton").click(function(event){
+            var uuid = $(this).parent().children('.uuid').html();
+
+            window.location=jsRoutes.controllers.AnalyzeOverzichtController.analyzeOverzicht(uuid).url;
+        });
+    });
+
+
+</script>
+
+
+    <h2>
+        @if(session.get("functie").equals("administrator")) {
+            Accounts
+        } else {
+            @if(session().get("functie").equals("leraar")){
+                Mijn leerlingen
+            }
+        }
+    </h2>
+    <table class="table table-bordered table-striped">
+        <thead>
+            <tr>
+                <th>Gebruikersnaam</th>
+                <th>Voornaam</th>
+                <th>Achternaam</th>
+                <th>Geboortedatum</th>
+                <th>Klas</th>
+                <th>Functie</th>
+                <th>Persoonsgegevens</th>
+                @if(session().get("functie").equals("leraar")){
+                    <th>Statistieken</th>
+                }
+                <th>Inloggegevens</th>
+                <th>Verwijderen</th>
+            </tr>
+        </thead>
+        <tbody>
+            @for(gebruiker <- gebruikers){
+                <tr>
+                    <td class="gebruikersnaam">@gebruiker.getGebruikersnaam</td>
+                    <td class="voornaam">@gebruiker.getVoornaam</td>
+                    <td class="achternaam">@gebruiker.getAchternaam</td>
+                    <td class="geboortedatum">@gebruiker.getGeboortedatum.format("dd/MM/yyyy")</td>
+                    <td class="klas">@gebruiker.getKlas</td>
+                    <td class="functie">@gebruiker.getFunctie.name()</td>
+                    <td class="uuid" style="display: none;">@gebruiker.getUuid</td>
+                    <td>
+                        <button class="btn btn-primary" data-toggle="modal" data-target="#persoonsgegevensModal" data-url="persoonsgegevens" contenteditable="false">
+                            Persoonsgegevens aanpassen
+                        </button>
+                    </td>
+
+                    @if(session().get("functie").equals("leraar")){
+                        <td class="analyzeButton"><button class="btn btn-primary">Statistieken</button></td>
+                    }
+
+                    <td><button class="btn btn-primary" data-toggle="modal" data-target="#inloggegevensModal" data-url="inloggegevens" contenteditable="false">
+                        Inloggegevens aanpassen</button></td>
+                    <td>
+                        <button class="btn btn-danger" data-toggle="modal" data-target="#deleteuserModal" data-url="delete" contenteditable="false" style="padding: 2px;">
+                            <img class="delete" src="@routes.Assets.at("images/delete.gif")" style="width:25px;"/>
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+        <tfoot>
+            <tr>
+                @if(session().get("functie").equals("leraar")){
+                    <td>
+                        <button class="btn btn-primary" data-toggle="modal" data-target="#registeruserModal" data-url="registerleerling" contenteditable="false">Voeg leerling toe</button>
+                    </td>
+                }
+                @if(session().get("functie").equals("administrator")){
+                    <td>
+                        <button class="btn btn-primary" data-toggle="modal" data-target="#registeruserModal" data-url="registerleraar" contenteditable="false">
+                            Voeg leraar toe
+                        </button>
+                    </td>
+                    <td>
+                        <button class="btn btn-primary" data-toggle="modal" data-target="#registeruserModal" data-url="registeradmin" contenteditable="false">Voeg administrator toe</button>
+                    </td>
+                }
+            </tr>
+        </tfoot>
+    </table>
+
